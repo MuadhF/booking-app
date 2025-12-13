@@ -49,8 +49,17 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
   const loadBookings = async () => {
     try {
       setLoading(true);
+      console.log('Loading bookings for venue:', venueId);
       const allBookings = await bookingsApi.getAll();
+      console.log('All bookings loaded:', allBookings);
+      
+      // Log the first booking's full structure
+      if (allBookings.length > 0) {
+        console.log('First booking full structure:', JSON.stringify(allBookings[0], null, 2));
+      }
+      
       const venueBookings = allBookings.filter(booking => booking.pitch_id === venueId);
+      console.log('Venue bookings filtered:', venueBookings);
       setBookings(venueBookings);
     } catch (err) {
       setError('Failed to load bookings');
@@ -68,18 +77,32 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
       setLoading(true);
       setError(null);
 
+      // Debug: Log the venue booking form state
+      console.log('=== VENUE BOOKING FORM DEBUG ===');
+      console.log('New Booking State:', newBooking);
+      console.log('Venue:', venue);
+
       const bookingData = {
         pitch_id: venueId,
         booking_date: newBooking.date,
         start_time: newBooking.time,
         duration_hours: newBooking.duration,
-        customer_name: newBooking.customerName,
-        customer_email: newBooking.customerEmail,
-        customer_phone: newBooking.customerPhone,
-        total_price: venue.price_per_hour * newBooking.duration
+        total_price: venue.price_per_hour * newBooking.duration,
+        guest_name: newBooking.customerName,
+        guest_email: newBooking.customerEmail,
+        guest_phone: newBooking.customerPhone
       };
 
-      await bookingsApi.create(bookingData);
+      console.log('=== VENUE BOOKING DATA TO SEND ===');
+      console.log('Full booking data:', JSON.stringify(bookingData, null, 2));
+      console.log('Guest name:', bookingData.guest_name);
+      console.log('Guest email:', bookingData.guest_email);
+      console.log('Guest phone:', bookingData.guest_phone);
+      
+      const createdBooking = await bookingsApi.create(bookingData);
+      
+      console.log('=== VENUE BOOKING CREATION RESPONSE ===');
+      console.log('Response data:', JSON.stringify(createdBooking, null, 2));
       
       // Reset form
       setNewBooking({
@@ -243,22 +266,55 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
                                 <div className="font-semibold text-gray-900">
                                   {booking.start_time} ({booking.duration_hours}h)
                                 </div>
-                                <div className="text-sm text-gray-600">{booking.customer_name}</div>
+                                <div className="text-base font-bold text-gray-900 mt-1">
+                                  {(() => {
+                                    const guestName = (booking as any).guests?.name;
+                                    const playerName = (booking as any).player_profiles?.full_name;
+                                    console.log('Booking ID:', booking.id, 'Guest name:', guestName, 'Player name:', playerName);
+                                    return guestName || playerName || `Customer (ID: ${booking.id.slice(-8)})`;
+                                  })()}
+                                </div>
+                                <div className="flex items-center space-x-4 text-xs text-gray-600 mt-1">
+                                  <div className="flex items-center space-x-1">
+                                    <Phone className="w-3 h-3" />
+                                    <span>{(() => {
+                                      const guestPhone = (booking as any).guests?.phone;
+                                      const playerPhone = (booking as any).player_profiles?.phone;
+                                      console.log('Booking ID:', booking.id, 'Guest phone:', guestPhone, 'Player phone:', playerPhone);
+                                      return guestPhone || playerPhone || 'Phone not available';
+                                    })()}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <Mail className="w-3 h-3" />
+                                    <span>{(() => {
+                                      const guestEmail = (booking as any).guests?.email;
+                                      const playerEmail = (booking as any).player_profiles?.email;
+                                      console.log('Booking ID:', booking.id, 'Guest email:', guestEmail, 'Player email:', playerEmail);
+                                      return guestEmail || playerEmail || 'Email not available';
+                                    })()}</span>
+                                  </div>
+                                  {booking.player_id && (
+                                    <div className="text-xs text-purple-600">
+                                      Player ID: {booking.player_id.slice(-8)}
+                                    </div>
+                                  )}
+                                  {booking.guest_id && (
+                                    <div className="text-xs text-orange-600">
+                                      Guest ID: {booking.guest_id.slice(-8)}
+                                    </div>
+                                  )}
+                                  <div className="text-xs text-blue-600">
+                                    ID: {booking.id.slice(-8)}
+                                  </div>
+                                </div>
+                                </div>
                               </div>
-                            </div>
                             <div className="text-right">
-                              <div className="font-semibold text-green-600">
+                              <div className="font-semibold text-green-600 text-lg">
                                 Rs. {booking.total_price.toLocaleString()}
                               </div>
-                              <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
-                                <div className="flex items-center space-x-1">
-                                  <Phone className="w-3 h-3" />
-                                  <span>{booking.customer_phone}</span>
-                                </div>
-                                <div className="flex items-center space-x-1">
-                                  <Mail className="w-3 h-3" />
-                                  <span>{booking.customer_email}</span>
-                                </div>
+                              <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">
+                                {booking.status}
                               </div>
                             </div>
                           </div>

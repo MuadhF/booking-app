@@ -20,16 +20,40 @@ export default function VenueLogin({ onLogin }: VenueLoginProps) {
     setError(null);
 
     try {
-      // Try to authenticate with Supabase
-      const authResult = await venueCredentialsApi.authenticate(credentials.username, credentials.password);
+      console.log('Attempting login with username:', credentials.username);
       
-      if (authResult) {
-        onLogin(authResult.venue.id, authResult.venue.name);
-      } else {
-        setError('Invalid username or password');
+      // Try Supabase authentication first
+      try {
+        const authResult = await venueCredentialsApi.authenticate(credentials.username, credentials.password);
+        if (authResult) {
+          console.log('Supabase authentication successful');
+          onLogin(authResult.venue.id, authResult.venue.name);
+          return;
+        } else {
+          console.log('No matching credentials found in Supabase');
+          setError('Invalid username or password. Please check your credentials.');
+          setLoading(false);
+          return;
+        }
+      } catch (supabaseError) {
+        console.error('Supabase authentication failed:', supabaseError);
+        
+        // Only use fallback if Supabase is completely unavailable
+        if (supabaseError instanceof Error && 
+            (supabaseError.message === 'Supabase not configured' || 
+             supabaseError.message.includes('network') || 
+             supabaseError.message.includes('connection'))) {
+          console.log('Supabase not configured, using fallback credentials');
+        } else {
+          // If it's a credential error, don't use fallback
+          setError('Invalid username or password. Please check your credentials.');
+          setLoading(false);
+          return;
+        }
       }
-    } catch (err) {
-      // Fallback to mock credentials if Supabase is not configured
+
+      // Fallback to mock credentials
+      console.log('Using fallback authentication');
       const venueCredentials = {
         'premier_arena': {
           password: 'arena123',
@@ -51,10 +75,14 @@ export default function VenueLogin({ onLogin }: VenueLoginProps) {
       const venue = venueCredentials[credentials.username as keyof typeof venueCredentials];
       
       if (venue && venue.password === credentials.password) {
+        console.log('Fallback authentication successful');
         onLogin(venue.venueId, venue.venueName);
       } else {
-        setError('Invalid username or password');
+        setError('Invalid username or password. Please check your credentials.');
       }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Login failed. Please try again.');
     }
     
     setLoading(false);
@@ -132,11 +160,17 @@ export default function VenueLogin({ onLogin }: VenueLoginProps) {
             </div>
 
             <div className="mt-8 p-4 bg-gray-50 rounded-xl">
-              <h3 className="font-semibold text-gray-900 mb-2">Demo Credentials:</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">Available Venue Logins:</h3>
               <div className="text-sm text-gray-600 space-y-1">
-                <p><strong>premier_arena</strong> / arena123</p>
-                <p><strong>elite_complex</strong> / elite123</p>
-                <p><strong>championship_ground</strong> / champ123</p>
+                <p><strong>premier_arena</strong> / arena123 - Premier Football Arena</p>
+                <p><strong>elite_complex</strong> / elite123 - Elite Sports Complex</p>
+                <p><strong>championship_ground</strong> / champ123 - Championship Futsal Ground</p>
+              </div>
+              <div className="mt-3 p-2 bg-blue-50 rounded-lg">
+                <p className="text-xs text-blue-700">
+                  <strong>Note:</strong> Only these 3 venues have management access configured. 
+                  Contact admin to add more venue logins.
+                </p>
               </div>
             </div>
           </form>

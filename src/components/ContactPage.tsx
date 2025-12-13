@@ -59,7 +59,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Operating Hours</h3>
-                    <p className="text-gray-600">Monday - Sunday: 9:00 AM - 10:00 PM</p>
+                    <p className="text-gray-600">Monday - Sunday: 9:00 AM - 9:00 PM</p>
                     <p className="text-sm text-gray-500">Bookings available 24/7 online</p>
                   </div>
                 </div>

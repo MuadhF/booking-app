@@ -104,7 +104,7 @@ export default function VenuesPage() {
       // Expand first location by default
       const firstLocation = Object.keys(grouped)[0];
       if (firstLocation) {
-        setExpandedLocations(new Set([firstLocation]));
+        setExpandedLocations(new Set()); // Start with all sections collapsed
       }
       
     } catch (err) {
@@ -170,12 +170,12 @@ export default function VenuesPage() {
               {/* Location Header */}
               <button
                 onClick={() => toggleLocation(location)}
-                className="w-full px-8 py-6 bg-gradient-to-r from-green-600 to-blue-600 text-white flex items-center justify-between hover:from-green-700 hover:to-blue-700 transition-all duration-200"
+                className="w-full px-8 py-4 bg-gradient-to-r from-green-600 to-blue-600 text-white flex items-center justify-between hover:from-green-700 hover:to-blue-700 transition-all duration-200"
               >
                 <div className="flex items-center space-x-4">
                   <MapPin className="w-6 h-6" />
                   <div className="text-left">
-                    <h2 className="text-2xl font-bold">{location}</h2>
+                    <h2 className="text-xl font-bold">{location}</h2>
                     <p className="text-green-100">
                       {locationPitches.length} venue{locationPitches.length !== 1 ? 's' : ''} available
                     </p>

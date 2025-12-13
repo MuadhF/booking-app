@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Users, CheckCircle, ArrowLeft, AlertCircle } from 'lucide-react';
-import { supabase, pitchesApi, bookingsApi, type Pitch, type Booking } from './lib/supabase';
+import { supabase, pitchesApi, bookingsApi, playerAuthApi, type Pitch, type Booking } from './lib/supabase';
 import Header from './components/Header';
+import Footer from './components/Footer';
 import ContactPage from './components/ContactPage';
 import VenuesPage from './components/VenuesPage';
 import VenueLogin from './components/VenueLogin';
 import VenueDashboard from './components/VenueDashboard';
+import PlayerLogin from './components/PlayerLogin';
+import PlayerProfile from './components/PlayerProfile';
+import TermsAndConditions from './components/TermsAndConditions';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import FAQs from './components/FAQs';
+import CancellationPolicy from './components/CancellationPolicy';
+import UpcomingBookings from './components/UpcomingBookings';
 
 interface TimeSlot {
   time: string;
@@ -39,10 +47,12 @@ const timeSlots: TimeSlot[] = [
   { time: '20:00', available: true }
 ];
 
-function App() {
+export default function App() {
   const [currentStep, setCurrentStep] = useState<'pitches' | 'booking' | 'confirmation'>('pitches');
   const [currentPage, setCurrentPage] = useState<string>('home');
   const [venueSession, setVenueSession] = useState<{venueId: string, venueName: string} | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [playerProfile, setPlayerProfile] = useState<any>(null);
   const [pitches, setPitches] = useState<Pitch[]>([]);
   const [selectedPitch, setSelectedPitch] = useState<Pitch | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -58,10 +68,48 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Update customer details when user or player profile changes
+  useEffect(() => {
+    if (user && playerProfile) {
+      setCustomerDetails(prev => ({
+        name: prev.name || playerProfile.full_name || '',
+        email: prev.email || user.email || '',
+        phone: prev.phone || playerProfile.phone || ''
+      }));
+    } else if (user && !playerProfile) {
+      setCustomerDetails(prev => ({
+        name: prev.name || '',
+        email: prev.email || user.email || '',
+        phone: prev.phone || ''
+      }));
+    }
+  }, [user, playerProfile]);
+
   // Load pitches on component mount
   useEffect(() => {
     loadPitches();
+    checkAuthState();
   }, []);
+
+  // Check authentication state
+  const checkAuthState = async () => {
+    try {
+      const currentUser = await playerAuthApi.getCurrentUser();
+      setUser(currentUser);
+      
+      if (currentUser?.id) {
+        try {
+          const profile = await playerAuthApi.getProfile(currentUser.id);
+          setPlayerProfile(profile);
+        } catch (err) {
+          console.error('Error fetching player profile:', err);
+          setPlayerProfile(null);
+        }
+      }
+    } catch (err) {
+      console.error('Error checking auth state:', err);
+    }
+  };
 
   // Check availability when date or pitch changes
   useEffect(() => {
@@ -172,23 +220,47 @@ function App() {
       setLoading(true);
       setError(null);
 
+      // Debug: Log the current form state
+      console.log('=== BOOKING FORM DEBUG ===');
+      console.log('Customer Details State:', customerDetails);
+      console.log('User Profile:', playerProfile);
+      console.log('Selected Pitch:', selectedPitch);
+      console.log('Form Values:', {
+        name: customerDetails.name,
+        email: customerDetails.email,
+        phone: customerDetails.phone
+      });
+
       const bookingData = {
         pitch_id: selectedPitch.id,
         booking_date: selectedDate,
         start_time: selectedTime,
         duration_hours: duration,
-        customer_name: customerDetails.name,
-        customer_email: customerDetails.email,
-        customer_phone: customerDetails.phone,
-        total_price: selectedPitch.price_per_hour * duration
+        total_price: selectedPitch.price_per_hour * duration,
+        player_id: user?.id || undefined,
+        guest_name: !user ? customerDetails.name : undefined,
+        guest_email: !user ? customerDetails.email : undefined,
+        guest_phone: !user ? customerDetails.phone : undefined
       };
 
+      console.log('=== BOOKING DATA TO SEND ===');
+      console.log('Full booking data:', JSON.stringify(bookingData, null, 2));
+      console.log('Player ID:', bookingData.player_id);
+      console.log('Guest name:', bookingData.guest_name);
+      console.log('Guest email:', bookingData.guest_email);
+      console.log('Guest phone:', bookingData.guest_phone);
+      
       const newBooking = await bookingsApi.create(bookingData);
+      
+      console.log('=== BOOKING CREATION RESPONSE ===');
+      console.log('Response data:', JSON.stringify(newBooking, null, 2));
+      
       setBooking(newBooking);
       setCurrentStep('confirmation');
     } catch (err) {
       setError('Failed to create booking. Please try again.');
-      console.error('Error creating booking:', err);
+      console.error('=== BOOKING CREATION ERROR ===');
+      console.error('Error details:', err);
     } finally {
       setLoading(false);
     }
@@ -222,6 +294,7 @@ function App() {
 
   const handlePageChange = (page: string) => {
     setCurrentPage(page);
+    window.scrollTo(0, 0);
     if (page === 'home' || page === 'venues') {
       // Reset to pitches view when going to home or venues
       setCurrentStep('pitches');
@@ -229,6 +302,54 @@ function App() {
     } else if (page === 'venue-portal') {
       setVenueSession(null);
     }
+  };
+
+  const handlePlayerLogin = (loggedInUser: any) => {
+    setUser(loggedInUser.user);
+    
+    // Fetch player profile after login
+    if (loggedInUser.user?.id) {
+      playerAuthApi.getProfile(loggedInUser.user.id)
+        .then(profile => setPlayerProfile(profile))
+        .catch(err => {
+          console.error('Error fetching player profile after login:', err);
+          setPlayerProfile(null);
+        });
+    }
+    
+    setCurrentPage('home');
+  };
+
+  const handlePlayerSignOut = () => {
+    playerAuthApi.signOut().then(() => {
+      setUser(null);
+      setPlayerProfile(null);
+      // Reset booking state when signing out
+      setCurrentStep('pitches');
+      setSelectedPitch(null);
+      setSelectedDate('');
+      setSelectedTime('');
+      setDuration(1);
+      setCustomerDetails({ name: '', email: '', phone: '' });
+      setBooking(null);
+      setError(null);
+      setCurrentPage('home');
+    }).catch((error) => {
+      console.error('Sign out error:', error);
+      // Force clear user state even if signOut fails
+      setUser(null);
+      setPlayerProfile(null);
+      // Reset booking state when signing out
+      setCurrentStep('pitches');
+      setSelectedPitch(null);
+      setSelectedDate('');
+      setSelectedTime('');
+      setDuration(1);
+      setCustomerDetails({ name: '', email: '', phone: '' });
+      setBooking(null);
+      setError(null);
+      setCurrentPage('home');
+    });
   };
 
   const handleVenueLogin = (venueId: string, venueName: string) => {
@@ -243,9 +364,111 @@ function App() {
   // Render contact page
   if (currentPage === 'contact') {
     return (
-      <div>
-        <Header currentPage={currentPage} onPageChange={handlePageChange} />
+      <div className="flex flex-col min-h-screen">
+        <Header
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          user={user}
+          onSignOut={handlePlayerSignOut}
+        />
         <ContactPage />
+        <Footer onPageChange={handlePageChange} />
+      </div>
+    );
+  }
+
+  // Render terms and conditions page
+  if (currentPage === 'terms') {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          user={user}
+          onSignOut={handlePlayerSignOut}
+        />
+        <TermsAndConditions />
+        <Footer onPageChange={handlePageChange} />
+      </div>
+    );
+  }
+
+  // Render privacy policy page
+  if (currentPage === 'privacy') {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          user={user}
+          onSignOut={handlePlayerSignOut}
+        />
+        <PrivacyPolicy />
+        <Footer onPageChange={handlePageChange} />
+      </div>
+    );
+  }
+
+  // Render FAQs page
+  if (currentPage === 'faqs') {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          user={user}
+          onSignOut={handlePlayerSignOut}
+        />
+        <FAQs />
+        <Footer onPageChange={handlePageChange} />
+      </div>
+    );
+  }
+
+  // Render cancellation policy page
+  if (currentPage === 'cancellation') {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          user={user}
+          onSignOut={handlePlayerSignOut}
+        />
+        <CancellationPolicy />
+        <Footer onPageChange={handlePageChange} />
+      </div>
+    );
+  }
+
+  // Render player login page
+  if (currentPage === 'login') {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          user={user}
+          onSignOut={handlePlayerSignOut}
+        />
+        <PlayerLogin onLogin={handlePlayerLogin} />
+        <Footer onPageChange={handlePageChange} />
+      </div>
+    );
+  }
+
+  // Render player profile page
+  if (currentPage === 'profile' && user) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          user={user}
+          onSignOut={handlePlayerSignOut}
+        />
+        <PlayerProfile user={user} />
+        <Footer onPageChange={handlePageChange} />
       </div>
     );
   }
@@ -254,14 +477,20 @@ function App() {
   if (currentPage === 'venue-portal') {
     if (!venueSession) {
       return (
-        <div>
-          <Header currentPage={currentPage} onPageChange={handlePageChange} />
+        <div className="flex flex-col min-h-screen">
+          <Header
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+            user={user}
+            onSignOut={handlePlayerSignOut}
+          />
           <VenueLogin onLogin={handleVenueLogin} />
+          <Footer onPageChange={handlePageChange} />
         </div>
       );
     } else {
       return (
-        <VenueDashboard 
+        <VenueDashboard
           venueId={venueSession.venueId}
           venueName={venueSession.venueName}
           onLogout={handleVenueLogout}
@@ -273,32 +502,49 @@ function App() {
   // Render venues page
   if (currentPage === 'venues') {
     return (
-      <div>
-        <Header currentPage={currentPage} onPageChange={handlePageChange} />
+      <div className="flex flex-col min-h-screen">
+        <Header
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          user={user}
+          onSignOut={handlePlayerSignOut}
+        />
         <VenuesPage />
+        <Footer onPageChange={handlePageChange} />
       </div>
     );
   }
 
   if (loading && pitches.length === 0) {
     return (
-      <div>
-        <Header currentPage={currentPage} onPageChange={handlePageChange} />
-        <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+      <div className="flex flex-col min-h-screen">
+        <Header
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          user={user}
+          onSignOut={handlePlayerSignOut}
+        />
+        <div className="flex-1 bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading pitches...</p>
           </div>
         </div>
+        <Footer onPageChange={handlePageChange} />
       </div>
     );
   }
 
   if (currentStep === 'confirmation' && booking) {
     return (
-      <div>
-        <Header currentPage={currentPage} onPageChange={handlePageChange} />
-        <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+      <div className="flex flex-col min-h-screen">
+        <Header
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          user={user}
+          onSignOut={handlePlayerSignOut}
+        />
+        <div className="flex-1 bg-gradient-to-br from-green-50 to-blue-50">
           <div className="container mx-auto px-4 py-8">
             <div className="max-w-2xl mx-auto">
               <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
@@ -332,11 +578,13 @@ function App() {
                         </div>
                         <div>
                           <p className="text-sm text-gray-600">Customer</p>
-                          <p className="font-semibold text-gray-900">{booking.customer_name}</p>
+                          <p className="font-semibold text-gray-900">
+                            {(booking as any).guests?.name || (booking as any).player_profiles?.full_name || 'Unknown'}
+                          </p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-600">Total Price</p>
-                          <p className="font-semibold text-green-600 text-lg">£{booking.total_price}</p>
+                          <p className="font-semibold text-green-600 text-lg">LKR {booking.total_price}</p>
                         </div>
                       </div>
                     </div>
@@ -348,7 +596,7 @@ function App() {
                       <li>• Please arrive 15 minutes before your booking time</li>
                       <li>• Bring appropriate sports equipment and footwear</li>
                       <li>• Cancellations must be made 24 hours in advance</li>
-                      <li>• A confirmation email has been sent to {booking.customer_email}</li>
+                      <li>• A confirmation email has been sent to {(booking as any).guests?.email || (booking as any).player_profiles?.email || customerDetails.email}</li>
                     </ul>
                   </div>
 
@@ -371,15 +619,21 @@ function App() {
             </div>
           </div>
         </div>
+        <Footer onPageChange={handlePageChange} />
       </div>
     );
   }
 
   if (currentStep === 'booking' && selectedPitch) {
     return (
-      <div>
-        <Header currentPage={currentPage} onPageChange={handlePageChange} />
-        <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+      <div className="flex flex-col min-h-screen">
+        <Header
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          user={user}
+          onSignOut={handlePlayerSignOut}
+        />
+        <div className="flex-1 bg-gradient-to-br from-green-50 to-blue-50">
           <div className="container mx-auto px-4 py-8">
             <div className="max-w-4xl mx-auto">
               <button
@@ -467,44 +721,65 @@ function App() {
                     <div className="space-y-6">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Customer Details</h3>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Full Name
-                            </label>
-                            <input
-                              type="text"
-                              value={customerDetails.name}
-                              onChange={(e) => setCustomerDetails({...customerDetails, name: e.target.value})}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              required
-                            />
+                        {user ? (
+                          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <p className="text-blue-800 text-sm mb-2">
+                              <strong>Signed in as:</strong> {user.email}
+                            </p>
+                            {playerProfile && (
+                              <p className="text-blue-800 text-sm mb-2">
+                                <strong>Name:</strong> {playerProfile.full_name}
+                              </p>
+                            )}
+                            {playerProfile?.phone && (
+                              <p className="text-blue-800 text-sm mb-2">
+                                <strong>Phone:</strong> {playerProfile.phone}
+                              </p>
+                            )}
+                            <p className="text-blue-700 text-xs mt-3">
+                              Your booking will be automatically linked to your account
+                            </p>
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Email Address
-                            </label>
-                            <input
-                              type="email"
-                              value={customerDetails.email}
-                              onChange={(e) => setCustomerDetails({...customerDetails, email: e.target.value})}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              required
-                            />
+                        ) : (
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Full Name
+                              </label>
+                              <input
+                                type="text"
+                                value={customerDetails.name}
+                                onChange={(e) => setCustomerDetails({...customerDetails, name: e.target.value})}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Email Address
+                              </label>
+                              <input
+                                type="email"
+                                value={customerDetails.email}
+                                onChange={(e) => setCustomerDetails({...customerDetails, email: e.target.value})}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Phone Number
+                              </label>
+                              <input
+                                type="tel"
+                                value={customerDetails.phone}
+                                onChange={(e) => setCustomerDetails({...customerDetails, phone: e.target.value})}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                required
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Phone Number
-                            </label>
-                            <input
-                              type="tel"
-                              value={customerDetails.phone}
-                              onChange={(e) => setCustomerDetails({...customerDetails, phone: e.target.value})}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              required
-                            />
-                          </div>
-                        </div>
+                        )}
                       </div>
 
                       <div className="bg-gray-50 rounded-xl p-6">
@@ -529,7 +804,7 @@ function App() {
                           <div className="border-t border-gray-200 pt-2 mt-3">
                             <div className="flex justify-between">
                               <span className="font-semibold text-gray-900">Total:</span>
-                              <span className="font-bold text-green-600 text-lg">£{selectedPitch.price_per_hour * duration}</span>
+                              <span className="font-bold text-green-600 text-lg">LKR {selectedPitch.price_per_hour * duration}</span>
                             </div>
                           </div>
                         </div>
@@ -565,14 +840,20 @@ function App() {
             </div>
           </div>
         </div>
+        <Footer onPageChange={handlePageChange} />
       </div>
     );
   }
 
   return (
-    <div>
-      <Header currentPage={currentPage} onPageChange={handlePageChange} />
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="flex flex-col min-h-screen">
+      <Header
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
+        user={user}
+        onSignOut={handlePlayerSignOut}
+      />
+      <div className="flex-1 bg-gradient-to-br from-green-50 to-blue-50">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -581,7 +862,25 @@ function App() {
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Choose from our premium football facilities and secure your perfect match time
             </p>
+            {!user && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl max-w-md mx-auto">
+                <p className="text-blue-800 text-sm">
+                  <strong>Tip:</strong> <button
+                    onClick={() => setCurrentPage('login')}
+                    className="text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Sign in
+                  </button> to track your bookings and enjoy faster checkout!
+                </p>
+              </div>
+            )}
           </div>
+
+          {user && (
+            <div className="max-w-4xl mx-auto mb-8">
+              <UpcomingBookings userId={user.id} />
+            </div>
+          )}
 
           {error && (
             <div className="max-w-4xl mx-auto mb-8">
@@ -602,7 +901,7 @@ function App() {
                     className="w-full h-48 object-cover"
                   />
                   <div className="absolute top-4 right-4 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold border-4 border-white shadow-lg">
-                    £{pitch.price_per_hour}/hour
+                    LKR {pitch.price_per_hour}/hour
                   </div>
                 </div>
               
@@ -646,8 +945,7 @@ function App() {
           </div>
         </div>
       </div>
+      <Footer onPageChange={handlePageChange} />
     </div>
   );
 }
-
-export default App;
