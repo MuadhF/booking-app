@@ -42,7 +42,7 @@ export default function Header({ currentPage, onPageChange, user, onSignOut }: H
             <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-blue-600 rounded-lg flex items-center justify-center">
               <MapPin className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900">Active SL</h1>
+            <h1 className="text-xl font-bold text-gray-900">RivoBook</h1>
           </div>
 
           {/* Navigation */}
