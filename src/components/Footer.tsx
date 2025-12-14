@@ -117,7 +117,7 @@ export default function Footer({ onPageChange }: FooterProps) {
               </li>
               <li className="flex items-center">
                 <Mail className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span className="text-sm">info@activesl.lk</span>
+                <span className="text-sm">info@rivobook.com</span>
               </li>
             </ul>
           </div>
