@@ -38,15 +38,15 @@ export default function Header({ currentPage, onPageChange, user, onSignOut }: H
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-blue-600 rounded-lg flex items-center justify-center">
-              <MapPin className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-xl font-bold text-gray-900">RivoBook</h1>
-          </div>
+          <button
+            onClick={() => onPageChange('home')}
+            className="absolute left-1/2 transform -translate-x-1/2 md:static md:transform-none flex items-center space-x-2 hover:opacity-80 transition-opacity flex-shrink-0"
+          >
+            <img src="/3.png" alt="RivoBook Logo" className="h-36 w-auto" />
+          </button>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
+          <nav className="hidden md:flex items-center space-x-1 ml-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (

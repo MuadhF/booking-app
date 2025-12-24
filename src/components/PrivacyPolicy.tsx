@@ -17,7 +17,7 @@ export default function PrivacyPolicy() {
             <section>
               <h2 className="text-2xl font-semibold text-gray-900 mb-3">1. Information We Collect</h2>
               <p className="mb-3">
-                At Active SL, we are committed to protecting your privacy. We collect information to provide and
+                At RivoBook, we are committed to protecting your privacy. We collect information to provide and
                 improve our services. The types of information we collect include:
               </p>
               <ul className="list-disc list-inside space-y-2 ml-4">
@@ -139,7 +139,7 @@ export default function PrivacyPolicy() {
                 us at:
               </p>
               <p className="mt-2">
-                Email: privacy@activesl.lk<br />
+                Email: support@rivobook.com<br />
                 Phone: +94 11 234 5678<br />
                 Address: 123 Sports Avenue, Colombo, Sri Lanka
               </p>

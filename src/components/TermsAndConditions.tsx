@@ -17,7 +17,7 @@ export default function TermsAndConditions() {
             <section>
               <h2 className="text-2xl font-semibold text-gray-900 mb-3">1. Introduction</h2>
               <p>
-                Welcome to Active SL. These Terms and Conditions govern your use of our football pitch booking services.
+                Welcome to RivoBook. These Terms and Conditions govern your use of our football pitch booking services.
                 By accessing or using our platform, you agree to be bound by these terms. Please read them carefully
                 before making any bookings.
               </p>
@@ -26,7 +26,7 @@ export default function TermsAndConditions() {
             <section>
               <h2 className="text-2xl font-semibold text-gray-900 mb-3">2. Booking Terms</h2>
               <p className="mb-3">
-                When you make a booking through Active SL, you enter into a binding agreement to use the pitch at the
+                When you make a booking through RivoBook, you enter into a binding agreement to use the pitch at the
                 specified date and time. All bookings are subject to availability and confirmation.
               </p>
               <ul className="list-disc list-inside space-y-2 ml-4">
@@ -39,7 +39,7 @@ export default function TermsAndConditions() {
 
             <section>
               <h2 className="text-2xl font-semibold text-gray-900 mb-3">3. User Responsibilities</h2>
-              <p className="mb-3">As a user of Active SL services, you agree to:</p>
+              <p className="mb-3">As a user of RivoBook services, you agree to:</p>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li>Provide accurate and complete information when making bookings</li>
                 <li>Use the facilities responsibly and respectfully</li>
@@ -62,7 +62,7 @@ export default function TermsAndConditions() {
             <section>
               <h2 className="text-2xl font-semibold text-gray-900 mb-3">5. Liability and Insurance</h2>
               <p>
-                Active SL acts as a booking platform connecting users with venue operators. While we strive to ensure
+                RivoBook acts as a booking platform connecting users with venue operators. While we strive to ensure
                 all venues meet safety standards, users participate in activities at their own risk. We recommend
                 having appropriate sports insurance coverage. Active SL is not liable for injuries, accidents, or
                 loss of personal property during pitch use.
@@ -81,8 +81,8 @@ export default function TermsAndConditions() {
             <section>
               <h2 className="text-2xl font-semibold text-gray-900 mb-3">7. Intellectual Property</h2>
               <p>
-                All content on the Active SL platform, including logos, text, images, and software, is the property
-                of Active SL or its content suppliers and is protected by intellectual property laws. Unauthorized
+                All content on the RivoBook platform, including logos, text, images, and software, is the property
+                of RivoBook or its content suppliers and is protected by intellectual property laws. Unauthorized
                 use is prohibited.
               </p>
             </section>
@@ -102,7 +102,7 @@ export default function TermsAndConditions() {
                 If you have any questions about these Terms and Conditions, please contact us at:
               </p>
               <p className="mt-2">
-                Email: legal@activesl.lk<br />
+                Email: support@rivobook.com<br />
                 Phone: +94 11 234 5678
               </p>
             </section>

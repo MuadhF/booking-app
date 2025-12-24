@@ -128,7 +128,7 @@ export default function FAQs() {
                 Can't find what you're looking for? Our support team is here to help.
                 Contact us at{' '}
                 <a href="mailto:support@pitchpro.lk" className="text-green-600 hover:text-green-700">
-                  support@activesl.lk
+                  support@rivobook.com
                 </a>{' '}
                 or call us at{' '}
                 <a href="tel:+94112345678" className="text-green-600 hover:text-green-700">

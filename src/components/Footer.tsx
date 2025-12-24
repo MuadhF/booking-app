@@ -11,7 +11,7 @@ export default function Footer({ onPageChange }: FooterProps) {
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-white text-lg font-bold mb-4">Active SL</h3>
+            <h3 className="text-white text-lg font-bold mb-4">RivoBook</h3>
             <p className="text-sm text-gray-400 mb-4">
               Your premier destination for booking quality football pitches. Making sports accessible to everyone.
             </p>
@@ -126,7 +126,7 @@ export default function Footer({ onPageChange }: FooterProps) {
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-gray-400 mb-4 md:mb-0">
-              &copy; 2025 Active SL. All rights reserved. Registered trademark.
+              &copy; 2025 RivoBook. All rights reserved. Registered trademark.
             </p>
             <p className="text-sm text-gray-400">
               Made with passion for football lovers

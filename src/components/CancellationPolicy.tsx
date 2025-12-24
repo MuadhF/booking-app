@@ -17,7 +17,7 @@ export default function CancellationPolicy() {
             <section>
               <h2 className="text-2xl font-semibold text-gray-900 mb-3">Overview</h2>
               <p>
-                At Active SL, we understand that plans can change. This cancellation policy outlines the terms
+                At RivoBook, we understand that plans can change. This cancellation policy outlines the terms
                 and conditions for modifying or canceling your pitch bookings. We aim to be fair to both our
                 customers and venue partners.
               </p>
@@ -66,7 +66,7 @@ export default function CancellationPolicy() {
                   Booking' button
                 </li>
                 <li>
-                  <strong>Email:</strong> Send a cancellation request to bookings@activesl.lk with your
+                  <strong>Email:</strong> Send a cancellation request to bookings@rivobook.com with your
                   booking reference number
                 </li>
                 <li>
@@ -174,7 +174,7 @@ export default function CancellationPolicy() {
                 please contact us:
               </p>
               <p className="mt-2">
-                Email: bookings@activesl.lk<br />
+                Email: bookings@rivobook.com<br />
                 Phone: +94 11 234 5678<br />
                 Hours: Monday-Sunday, 9 AM - 6 PM
               </p>
