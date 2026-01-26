@@ -27,7 +27,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Phone</h3>
-                    <p className="text-gray-600">+44 20 1234 5678</p>
+                    <p className="text-gray-600">+94 11 234 5678</p>
                     <p className="text-sm text-gray-500">Mon-Sun: 8:00 AM - 10:00 PM</p>
                   </div>
                 </div>
@@ -49,7 +49,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Address</h3>
-                    <p className="text-gray-600">123 Sports Complex Lane<br />London, SW1A 1AA</p>
+                    <p className="text-gray-600">62/1, Dudley Senanayake Mawatha<br />Dehiwala - Mount Lavinia, Colombo</p>
                   </div>
                 </div>
 
@@ -58,7 +58,7 @@ export default function ContactPage() {
                     <Clock className="w-6 h-6 text-orange-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Operating Hours</h3>
+                    <h3 className="font-semibold text-gray-900">Pitch Operating Hours</h3>
                     <p className="text-gray-600">Monday - Sunday: 9:00 AM - 9:00 PM</p>
                     <p className="text-sm text-gray-500">Bookings available 24/7 online</p>
                   </div>
@@ -151,7 +151,7 @@ export default function ContactPage() {
               
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">What's your cancellation policy?</h3>
-                <p className="text-gray-600 text-sm">Free cancellation up to 24 hours before your booking. Cancellations within 24 hours are subject to a 50% charge.</p>
+                <p className="text-gray-600 text-sm">Free cancellation up to 24 hours before your booking. Cancellations within 24 hours may be subject to a 50% charge.</p>
               </div>
               
               <div>

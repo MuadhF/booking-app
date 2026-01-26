@@ -31,6 +31,7 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
     customerEmail: '',
     customerPhone: ''
   });
+  const [dateError, setDateError] = useState<string | null>(null);
 
   useEffect(() => {
     loadVenueData();
@@ -141,6 +142,31 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split('T')[0];
+  };
+
+  const getMaxBookingDate = () => {
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + 30);
+    return maxDate.toISOString().split('T')[0];
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedDate = e.target.value;
+    setNewBooking({...newBooking, date: selectedDate});
+
+    if (selectedDate) {
+      const selected = new Date(selectedDate);
+      const maxDate = new Date();
+      maxDate.setDate(maxDate.getDate() + 30);
+
+      if (selected > maxDate) {
+        setDateError('Bookings can only be made up to 30 days in advance');
+      } else {
+        setDateError(null);
+      }
+    } else {
+      setDateError(null);
+    }
   };
 
   const groupBookingsByDate = (bookings: Booking[]) => {
@@ -348,12 +374,16 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
                       <input
                         type="date"
                         value={newBooking.date}
-                        onChange={(e) => setNewBooking({...newBooking, date: e.target.value})}
+                        onChange={handleDateChange}
                         min={getTomorrowDate()}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        max={getMaxBookingDate()}
+                        className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-colors ${
+                          dateError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
+                        }`}
                         required
                       />
                     </div>
+                    {dateError && <p className="text-red-600 text-sm mt-1">{dateError}</p>}
                   </div>
 
                   <div>

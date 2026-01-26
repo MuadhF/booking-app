@@ -158,21 +158,8 @@ export default function VenueLogin({ onLogin }: VenueLoginProps) {
                 )}
               </button>
             </div>
-
-            <div className="mt-8 p-4 bg-gray-50 rounded-xl">
-              <h3 className="font-semibold text-gray-900 mb-2">Available Venue Logins:</h3>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p><strong>premier_arena</strong> / arena123 - Premier Football Arena</p>
-                <p><strong>elite_complex</strong> / elite123 - Elite Sports Complex</p>
-                <p><strong>championship_ground</strong> / champ123 - Championship Futsal Ground</p>
-              </div>
-              <div className="mt-3 p-2 bg-blue-50 rounded-lg">
-                <p className="text-xs text-blue-700">
-                  <strong>Note:</strong> Only these 3 venues have management access configured. 
-                  Contact admin to add more venue logins.
-                </p>
-              </div>
-            </div>
+  
+            
           </form>
         </div>
       </div>

@@ -113,7 +113,16 @@ export const bookingsApi = {
     if (!supabase) {
       throw new Error('Supabase not configured');
     }
-    
+
+    const bookingDate = new Date(bookingData.booking_date);
+    const today = new Date();
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + 30);
+
+    if (bookingDate > maxDate) {
+      throw new Error('Bookings can only be made up to 1 month in advance');
+    }
+
     console.log('=== SUPABASE API CREATE BOOKING ===');
     console.log('Input data:', JSON.stringify(bookingData, null, 2));
     
@@ -524,8 +533,12 @@ export const playerAuthApi = {
       throw new Error('Supabase not configured');
     }
 
+    const redirectUrl = import.meta.env.PROD
+      ? `https://football-pitch-booki-vo78.bolt.host/reset-password`
+      : `${window.location.origin}/reset-password`;
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
+      redirectTo: redirectUrl
     });
 
     if (error) throw error;

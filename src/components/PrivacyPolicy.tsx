@@ -12,7 +12,7 @@ export default function PrivacyPolicy() {
           </div>
 
           <div className="text-gray-700 space-y-6">
-            <p className="text-sm text-gray-500">Last Updated: January 2025</p>
+            <p className="text-sm text-gray-500">Last Updated: January 2026</p>
 
             <section>
               <h2 className="text-2xl font-semibold text-gray-900 mb-3">1. Information We Collect</h2>
@@ -141,7 +141,7 @@ export default function PrivacyPolicy() {
               <p className="mt-2">
                 Email: support@rivobook.com<br />
                 Phone: +94 11 234 5678<br />
-                Address: 123 Sports Avenue, Colombo, Sri Lanka
+                Address: 62/1, Dudley Senanayake Mawatha, Dehiwala - Mount Lavinia, Colombo
               </p>
             </section>
           </div>

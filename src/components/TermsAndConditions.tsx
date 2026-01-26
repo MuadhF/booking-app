@@ -64,7 +64,7 @@ export default function TermsAndConditions() {
               <p>
                 RivoBook acts as a booking platform connecting users with venue operators. While we strive to ensure
                 all venues meet safety standards, users participate in activities at their own risk. We recommend
-                having appropriate sports insurance coverage. Active SL is not liable for injuries, accidents, or
+                having appropriate sports insurance coverage. RivoBook is not liable for injuries, accidents, or
                 loss of personal property during pitch use.
               </p>
             </section>

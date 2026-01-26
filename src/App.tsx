@@ -9,11 +9,14 @@ import VenueLogin from './components/VenueLogin';
 import VenueDashboard from './components/VenueDashboard';
 import PlayerLogin from './components/PlayerLogin';
 import PlayerProfile from './components/PlayerProfile';
+import PasswordReset from './components/PasswordReset';
 import TermsAndConditions from './components/TermsAndConditions';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import FAQs from './components/FAQs';
 import CancellationPolicy from './components/CancellationPolicy';
 import UpcomingBookings from './components/UpcomingBookings';
+import PitchFilters from './components/PitchFilters';
+import type { FilterOptions } from './components/PitchFilters';
 
 interface TimeSlot {
   time: string;
@@ -54,6 +57,7 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [playerProfile, setPlayerProfile] = useState<any>(null);
   const [pitches, setPitches] = useState<Pitch[]>([]);
+  const [filteredPitches, setFilteredPitches] = useState<Pitch[]>([]);
   const [selectedPitch, setSelectedPitch] = useState<Pitch | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
@@ -67,6 +71,16 @@ export default function App() {
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>(timeSlots);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<FilterOptions>({
+    locations: [],
+    minCapacity: 0,
+    maxCapacity: 22,
+    minPrice: 0,
+    maxPrice: 5000,
+    hasToilets: false,
+    hasChangingRooms: false,
+    sortBy: 'none'
+  });
 
   // Update customer details when user or player profile changes
   useEffect(() => {
@@ -89,7 +103,20 @@ export default function App() {
   useEffect(() => {
     loadPitches();
     checkAuthState();
+    checkResetPasswordLink();
   }, []);
+
+  const checkResetPasswordLink = () => {
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery')) {
+      setCurrentPage('reset-password');
+    }
+  };
+
+  // Apply filters and sorting when pitches or filters change
+  useEffect(() => {
+    applyFiltersAndSort();
+  }, [pitches, filters]);
 
   // Check authentication state
   const checkAuthState = async () => {
@@ -203,6 +230,53 @@ export default function App() {
     const [hour, minute] = time.split(':').map(Number);
     const newHour = (hour + hours) % 24;
     return `${newHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  };
+
+  const applyFiltersAndSort = () => {
+    let filtered = [...pitches];
+
+    // Apply location filter
+    if (filters.locations.length > 0) {
+      filtered = filtered.filter(pitch =>
+        filters.locations.includes(pitch.location)
+      );
+    }
+
+    // Apply capacity filter
+    filtered = filtered.filter(pitch =>
+      pitch.capacity >= filters.minCapacity && pitch.capacity <= filters.maxCapacity
+    );
+
+    // Apply price filter
+    filtered = filtered.filter(pitch =>
+      pitch.price_per_hour >= filters.minPrice && pitch.price_per_hour <= filters.maxPrice
+    );
+
+    // Apply amenities filter
+    if (filters.hasToilets) {
+      filtered = filtered.filter(pitch =>
+        pitch.amenities.some(a => a.toLowerCase().includes('toilet'))
+      );
+    }
+
+    if (filters.hasChangingRooms) {
+      filtered = filtered.filter(pitch =>
+        pitch.amenities.some(a => a.toLowerCase().includes('changing'))
+      );
+    }
+
+    // Apply sorting
+    if (filters.sortBy === 'price-low') {
+      filtered.sort((a, b) => a.price_per_hour - b.price_per_hour);
+    } else if (filters.sortBy === 'price-high') {
+      filtered.sort((a, b) => b.price_per_hour - a.price_per_hour);
+    } else if (filters.sortBy === 'capacity-low') {
+      filtered.sort((a, b) => a.capacity - b.capacity);
+    } else if (filters.sortBy === 'capacity-high') {
+      filtered.sort((a, b) => b.capacity - a.capacity);
+    }
+
+    setFilteredPitches(filtered);
   };
 
   const handlePitchSelect = (pitch: Pitch) => {
@@ -452,6 +526,22 @@ export default function App() {
           onSignOut={handlePlayerSignOut}
         />
         <PlayerLogin onLogin={handlePlayerLogin} />
+        <Footer onPageChange={handlePageChange} />
+      </div>
+    );
+  }
+
+  // Render password reset page
+  if (currentPage === 'reset-password') {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          user={user}
+          onSignOut={handlePlayerSignOut}
+        />
+        <PasswordReset />
         <Footer onPageChange={handlePageChange} />
       </div>
     );
@@ -891,8 +981,22 @@ export default function App() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {pitches.map((pitch) => (
+          <div className="max-w-7xl mx-auto">
+            <PitchFilters
+              allLocations={Array.from(new Set(pitches.map(p => p.location)))}
+              maxCapacityInData={Math.max(...pitches.map(p => p.capacity), 22)}
+              maxPriceInData={Math.max(...pitches.map(p => p.price_per_hour), 5000)}
+              onFiltersChange={setFilters}
+            />
+          </div>
+
+          {filteredPitches.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No pitches match your filters. Try adjusting your search criteria.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredPitches.map((pitch) => (
               <div key={pitch.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col">
                 <div className="relative">
                   <img
@@ -942,7 +1046,8 @@ export default function App() {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
         </div>
       </div>
       <Footer onPageChange={handlePageChange} />

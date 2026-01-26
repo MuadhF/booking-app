@@ -71,7 +71,7 @@ export default function CancellationPolicy() {
                 </li>
                 <li>
                   <strong>Phone:</strong> Call our support team at +94 11 234 5678 during business hours
-                  (9 AM - 6 PM)
+                  (8 AM - 10 PM)
                 </li>
               </ol>
               <p className="mt-3">
@@ -176,7 +176,7 @@ export default function CancellationPolicy() {
               <p className="mt-2">
                 Email: bookings@rivobook.com<br />
                 Phone: +94 11 234 5678<br />
-                Hours: Monday-Sunday, 9 AM - 6 PM
+                Hours: Monday-Sunday, 8 AM - 10 PM
               </p>
             </section>
           </div>

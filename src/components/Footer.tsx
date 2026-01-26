@@ -109,7 +109,8 @@ export default function Footer({ onPageChange }: FooterProps) {
             <ul className="space-y-3">
               <li className="flex items-start">
                 <MapPin className="w-4 h-4 mr-2 mt-1 flex-shrink-0" />
-                <span className="text-sm">123 Sports Avenue, Colombo, Sri Lanka</span>
+                <span className="text-sm">62/1, Dudley Senanayake Mawatha, Dehiwala - Mount Lavinia, 
+Colombo </span>
               </li>
               <li className="flex items-center">
                 <Phone className="w-4 h-4 mr-2 flex-shrink-0" />
@@ -126,7 +127,7 @@ export default function Footer({ onPageChange }: FooterProps) {
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-gray-400 mb-4 md:mb-0">
-              &copy; 2025 RivoBook. All rights reserved. Registered trademark.
+              &copy; 2026 RivoBook. All rights reserved. Registered trademark.
             </p>
             <p className="text-sm text-gray-400">
               Made with passion for football lovers
