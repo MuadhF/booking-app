@@ -42,7 +42,7 @@ export default function Header({ currentPage, onPageChange, user, onSignOut }: H
             onClick={() => onPageChange('home')}
             className="absolute left-1/2 transform -translate-x-1/2 md:static md:transform-none flex items-center space-x-2 hover:opacity-80 transition-opacity flex-shrink-0"
           >
-            <img src="/images/3.png" alt="RivoBook Logo" className="h-36 w-auto" />
+            <img src="../../images/3.png" alt="RivoBook Logo" className="h-36 w-auto" />
           </button>
 
           {/* Navigation */}
