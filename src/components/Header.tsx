@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Home, MapPin, Phone, Building2, User, LogOut, Menu, X } from 'lucide-react';
 import { playerAuthApi } from '../lib/supabase';
-import logo from "../../images/3.png";
+import logo from "/images/logo.png";
 
 interface HeaderProps {
   currentPage: string;
