@@ -51,15 +51,15 @@ export default function PasswordReset() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center">
       <div className="max-w-md w-full mx-4">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-green-600 to-blue-600 px-8 py-6">
+          <div className="bg-gradient-to-r from-primary-600 to-secondary-600 px-8 py-6">
             <div className="flex items-center space-x-3">
               <Lock className="w-8 h-8 text-white" />
               <h1 className="text-2xl font-bold text-white">Reset Password</h1>
             </div>
-            <p className="text-green-100 mt-1">Create a new password for your account</p>
+            <p className="text-primary-100 mt-1">Create a new password for your account</p>
           </div>
 
           <div className="p-8">
@@ -73,13 +73,13 @@ export default function PasswordReset() {
             {success ? (
               <div className="text-center">
                 <div className="mb-4 flex justify-center">
-                  <CheckCircle className="w-16 h-16 text-green-600" />
+                  <CheckCircle className="w-16 h-16 text-primary-600" />
                 </div>
                 <h2 className="text-xl font-bold text-gray-900 mb-2">Password Reset Successful!</h2>
                 <p className="text-gray-600 mb-6">Your password has been updated. You can now sign in with your new password.</p>
                 <a
                   href="/"
-                  className="inline-block bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200"
+                  className="inline-block bg-gradient-to-r from-primary-600 to-primary-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200"
                 >
                   Return to Home
                 </a>
@@ -96,7 +96,7 @@ export default function PasswordReset() {
                       type={showPassword ? 'text' : 'password'}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="Enter new password"
                       required
                       minLength={6}
@@ -115,7 +115,7 @@ export default function PasswordReset() {
                       type={showPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="Confirm new password"
                       required
                       minLength={6}
@@ -126,7 +126,7 @@ export default function PasswordReset() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="text-sm text-green-600 hover:text-green-700 font-medium"
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                 >
                   {showPassword ? 'Hide' : 'Show'} passwords
                 </button>
@@ -134,7 +134,7 @@ export default function PasswordReset() {
                 <button
                   type="submit"
                   disabled={loading || !newPassword || !confirmPassword}
-                  className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
+                  className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
                 >
                   {loading ? (
                     <>

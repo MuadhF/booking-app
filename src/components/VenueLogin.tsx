@@ -3,7 +3,7 @@ import { Lock, User, Building2 } from 'lucide-react';
 import { venueCredentialsApi } from '../lib/supabase';
 
 interface VenueLoginProps {
-  onLogin: (venueId: string, venueName: string) => void;
+  onLogin?: (venueId: string, venueName: string) => void;
 }
 
 export default function VenueLogin({ onLogin }: VenueLoginProps) {
@@ -27,7 +27,9 @@ export default function VenueLogin({ onLogin }: VenueLoginProps) {
         const authResult = await venueCredentialsApi.authenticate(credentials.username, credentials.password);
         if (authResult) {
           console.log('Supabase authentication successful');
-          onLogin(authResult.venue.id, authResult.venue.name);
+          if (onLogin) {
+            onLogin(authResult.venue.id, authResult.venue.name);
+          }
           return;
         } else {
           console.log('No matching credentials found in Supabase');
@@ -76,7 +78,10 @@ export default function VenueLogin({ onLogin }: VenueLoginProps) {
       
       if (venue && venue.password === credentials.password) {
         console.log('Fallback authentication successful');
-        onLogin(venue.venueId, venue.venueName);
+        if (onLogin) {
+          onLogin(venue.venueId, venue.venueName);
+        }
+        return;
       } else {
         setError('Invalid username or password. Please check your credentials.');
       }
@@ -89,15 +94,15 @@ export default function VenueLogin({ onLogin }: VenueLoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center">
       <div className="max-w-md w-full mx-4">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-green-600 to-blue-600 px-8 py-6">
+          <div className="bg-gradient-to-r from-primary-600 to-secondary-600 px-8 py-6">
             <div className="flex items-center space-x-3">
               <Building2 className="w-8 h-8 text-white" />
               <h1 className="text-2xl font-bold text-white">Venue Portal</h1>
             </div>
-            <p className="text-green-100 mt-1">Access your venue management dashboard</p>
+            <p className="text-primary-100 mt-1">Access your venue management dashboard</p>
           </div>
 
           <form onSubmit={handleSubmit} className="p-8">
@@ -119,7 +124,7 @@ export default function VenueLogin({ onLogin }: VenueLoginProps) {
                     type="text"
                     value={credentials.username}
                     onChange={(e) => setCredentials({...credentials, username: e.target.value})}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Enter your username"
                     required
                   />
@@ -136,7 +141,7 @@ export default function VenueLogin({ onLogin }: VenueLoginProps) {
                     type="password"
                     value={credentials.password}
                     onChange={(e) => setCredentials({...credentials, password: e.target.value})}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Enter your password"
                     required
                   />
@@ -146,7 +151,7 @@ export default function VenueLogin({ onLogin }: VenueLoginProps) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
+                className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
               >
                 {loading ? (
                   <>

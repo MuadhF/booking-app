@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User, Lock, Mail, Phone, UserPlus, LogIn, Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { playerAuthApi } from '../lib/supabase';
 
 interface PlayerLoginProps {
@@ -7,6 +8,7 @@ interface PlayerLoginProps {
 }
 
 export default function PlayerLogin({ onLogin }: PlayerLoginProps) {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<'signin' | 'signup' | 'reset'>('signin');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -61,11 +63,15 @@ export default function PlayerLogin({ onLogin }: PlayerLoginProps) {
           setFormData({ email: formData.email, password: '', fullName: '', phone: '' });
         } else if (authData.user) {
           onLogin(authData);
+          navigate('/');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } else {
         const authData = await playerAuthApi.signIn(formData.email, formData.password);
         if (authData.user) {
           onLogin(authData);
+          navigate('/');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       }
     } catch (err: any) {
@@ -97,17 +103,17 @@ export default function PlayerLogin({ onLogin }: PlayerLoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center">
       <div className="max-w-md w-full mx-4">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-green-600 to-blue-600 px-8 py-6">
+          <div className="bg-gradient-to-r from-primary-600 to-secondary-600 px-8 py-6">
             <div className="flex items-center space-x-3">
               <User className="w-8 h-8 text-white" />
               <h1 className="text-2xl font-bold text-white">
                 {mode === 'signin' ? 'Welcome Back' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
               </h1>
             </div>
-            <p className="text-green-100 mt-1">
+            <p className="text-primary-100 mt-1">
               {mode === 'signin'
                 ? 'Sign in to manage your bookings'
                 : mode === 'signup'
@@ -154,9 +160,9 @@ export default function PlayerLogin({ onLogin }: PlayerLoginProps) {
             )}
 
             {success && (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-center space-x-3">
-                <div className="w-5 h-5 text-green-600">✅</div>
-                <p className="text-green-800">{success}</p>
+              <div className="bg-primary-50 border border-primary-200 rounded-xl p-4 mb-6 flex items-center space-x-3">
+                <div className="w-5 h-5 text-primary-600">✅</div>
+                <p className="text-primary-800">{success}</p>
               </div>
             )}
 
@@ -172,7 +178,7 @@ export default function PlayerLogin({ onLogin }: PlayerLoginProps) {
                       type="email"
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="Enter your email"
                       required
                     />
@@ -182,7 +188,7 @@ export default function PlayerLogin({ onLogin }: PlayerLoginProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
+                  className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
                 >
                   {loading ? (
                     <>
@@ -220,7 +226,7 @@ export default function PlayerLogin({ onLogin }: PlayerLoginProps) {
                       type="text"
                       value={formData.fullName}
                       onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="Enter your full name"
                       required
                     />
@@ -238,7 +244,7 @@ export default function PlayerLogin({ onLogin }: PlayerLoginProps) {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Enter your email"
                     required
                   />
@@ -256,7 +262,7 @@ export default function PlayerLogin({ onLogin }: PlayerLoginProps) {
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="Enter your phone number"
                       required
                     />
@@ -274,7 +280,7 @@ export default function PlayerLogin({ onLogin }: PlayerLoginProps) {
                     type={showPassword ? 'text' : 'password'}
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     placeholder="Enter your password"
                     required
                     minLength={6}
@@ -295,7 +301,7 @@ export default function PlayerLogin({ onLogin }: PlayerLoginProps) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
+                className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
               >
                 {loading ? (
                   <>
@@ -316,7 +322,7 @@ export default function PlayerLogin({ onLogin }: PlayerLoginProps) {
               <div className="mt-4 text-center">
                 <button
                   onClick={() => switchMode('reset')}
-                  className="text-sm text-green-600 hover:text-green-700 font-medium"
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                 >
                   Forgot your password?
                 </button>
@@ -329,7 +335,7 @@ export default function PlayerLogin({ onLogin }: PlayerLoginProps) {
                 {mode === 'signin' ? "Don't have an account? " : "Already have an account? "}
                 <button
                   onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')}
-                  className="text-green-600 hover:text-green-700 font-semibold"
+                  className="text-primary-600 hover:text-primary-700 font-semibold"
                 >
                   {mode === 'signin' ? 'Sign up here' : 'Sign in here'}
                 </button>
@@ -338,11 +344,11 @@ export default function PlayerLogin({ onLogin }: PlayerLoginProps) {
             )}
 
             {mode === 'signup' && (
-            <div className="mt-6 p-4 bg-blue-50 rounded-xl">
-              <p className="text-sm text-blue-800">
+            <div className="mt-6 p-4 bg-secondary-50 rounded-xl">
+              <p className="text-sm text-secondary-800">
                 <strong>Benefits of creating an account:</strong>
               </p>
-              <ul className="text-xs text-blue-700 mt-2 space-y-1">
+              <ul className="text-xs text-secondary-700 mt-2 space-y-1">
                 <li>• View all your past and upcoming bookings</li>
                 <li>• Faster checkout with saved details</li>
                 <li>• Manage and modify your reservations</li>

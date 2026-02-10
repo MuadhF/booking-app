@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Users, CheckCircle, ArrowLeft, AlertCircle } from 'lucide-react';
-import { supabase, pitchesApi, bookingsApi, playerAuthApi, type Pitch, type Booking } from './lib/supabase';
+import { Calendar, Clock, MapPin, Users, CheckCircle, ArrowLeft, AlertCircle, Star } from 'lucide-react';
+import { supabase, pitchesApi, bookingsApi, playerAuthApi, reviewsApi, type Pitch, type Booking } from './lib/supabase';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ContactPage from './components/ContactPage';
@@ -17,6 +17,8 @@ import CancellationPolicy from './components/CancellationPolicy';
 import UpcomingBookings from './components/UpcomingBookings';
 import PitchFilters from './components/PitchFilters';
 import type { FilterOptions } from './components/PitchFilters';
+import { useAuth } from './hooks/useAuth';
+import { SubscriptionStatus } from './components/stripe/SubscriptionStatus';
 
 interface TimeSlot {
   time: string;
@@ -58,6 +60,7 @@ export default function App() {
   const [playerProfile, setPlayerProfile] = useState<any>(null);
   const [pitches, setPitches] = useState<Pitch[]>([]);
   const [filteredPitches, setFilteredPitches] = useState<Pitch[]>([]);
+  const [pitchRatings, setPitchRatings] = useState<Record<string, { average: number; count: number }>>({});
   const [selectedPitch, setSelectedPitch] = useState<Pitch | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
@@ -71,6 +74,7 @@ export default function App() {
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>(timeSlots);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'online'>('cash');
   const [filters, setFilters] = useState<FilterOptions>({
     locations: [],
     minCapacity: 0,
@@ -81,6 +85,8 @@ export default function App() {
     hasChangingRooms: false,
     sortBy: 'none'
   });
+
+  const { user: authUser, loading: authLoading } = useAuth();
 
   // Update customer details when user or player profile changes
   useEffect(() => {
@@ -190,6 +196,20 @@ export default function App() {
       } else {
         const data = await pitchesApi.getAll();
         setPitches(data);
+
+        try {
+          const ratingsPromises = data.map(pitch =>
+            reviewsApi.getAverageRating(pitch.id)
+          );
+          const ratings = await Promise.all(ratingsPromises);
+          const ratingsMap: Record<string, { average: number; count: number }> = {};
+          data.forEach((pitch, index) => {
+            ratingsMap[pitch.id] = ratings[index];
+          });
+          setPitchRatings(ratingsMap);
+        } catch (ratingsErr) {
+          console.log('Could not load ratings, continuing without them:', ratingsErr);
+        }
       }
     } catch (err) {
       setError('Failed to load pitches. Please try again.');
@@ -314,23 +334,37 @@ export default function App() {
         player_id: user?.id || undefined,
         guest_name: !user ? customerDetails.name : undefined,
         guest_email: !user ? customerDetails.email : undefined,
-        guest_phone: !user ? customerDetails.phone : undefined
+        guest_phone: !user ? customerDetails.phone : undefined,
+        payment_method: paymentMethod,
+        payment_status: paymentMethod === 'cash' ? 'completed' : 'pending',
+        status: paymentMethod === 'cash' ? 'confirmed' : 'pending'
       };
 
-      console.log('=== BOOKING DATA TO SEND ===');
-      console.log('Full booking data:', JSON.stringify(bookingData, null, 2));
-      console.log('Player ID:', bookingData.player_id);
-      console.log('Guest name:', bookingData.guest_name);
-      console.log('Guest email:', bookingData.guest_email);
-      console.log('Guest phone:', bookingData.guest_phone);
-      
-      const newBooking = await bookingsApi.create(bookingData);
-      
-      console.log('=== BOOKING CREATION RESPONSE ===');
-      console.log('Response data:', JSON.stringify(newBooking, null, 2));
-      
-      setBooking(newBooking);
-      setCurrentStep('confirmation');
+      if (paymentMethod === 'online') {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pitch-checkout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            bookingData,
+            pitchName: selectedPitch.name,
+            venueName: selectedPitch.venue_name || 'Football Venue'
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create checkout session');
+        }
+
+        const { url } = await response.json();
+        window.location.href = url;
+      } else {
+        const newBooking = await bookingsApi.create(bookingData);
+        setBooking(newBooking);
+        setCurrentStep('confirmation');
+      }
     } catch (err) {
       setError('Failed to create booking. Please try again.');
       console.error('=== BOOKING CREATION ERROR ===');
@@ -433,7 +467,19 @@ export default function App() {
   const handleVenueLogout = () => {
     setVenueSession(null);
     setCurrentPage('home');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Render contact page
   if (currentPage === 'contact') {
@@ -584,6 +630,7 @@ export default function App() {
           venueId={venueSession.venueId}
           venueName={venueSession.venueName}
           onLogout={handleVenueLogout}
+          onPageChange={handlePageChange}
         />
       );
     }
@@ -614,9 +661,9 @@ export default function App() {
           user={user}
           onSignOut={handlePlayerSignOut}
         />
-        <div className="flex-1 bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="flex-1 bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading pitches...</p>
           </div>
         </div>
@@ -634,11 +681,11 @@ export default function App() {
           user={user}
           onSignOut={handlePlayerSignOut}
         />
-        <div className="flex-1 bg-gradient-to-br from-green-50 to-blue-50">
+        <div className="flex-1 bg-gradient-to-br from-primary-50 to-secondary-50">
           <div className="container mx-auto px-4 py-8">
             <div className="max-w-2xl mx-auto">
               <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-                <div className="bg-gradient-to-r from-green-500 to-green-600 px-8 py-6">
+                <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-8 py-6">
                   <div className="flex items-center space-x-3">
                     <CheckCircle className="w-8 h-8 text-white" />
                     <h1 className="text-2xl font-bold text-white">Booking Confirmed!</h1>
@@ -674,15 +721,15 @@ export default function App() {
                         </div>
                         <div>
                           <p className="text-sm text-gray-600">Total Price</p>
-                          <p className="font-semibold text-green-600 text-lg">LKR {booking.total_price}</p>
+                          <p className="font-semibold text-primary-600 text-lg">LKR {booking.total_price}</p>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
-                    <h3 className="font-semibold text-blue-900 mb-2">Important Information</h3>
-                    <ul className="text-sm text-blue-800 space-y-1">
+                  <div className="bg-secondary-50 border border-secondary-200 rounded-xl p-6 mb-8">
+                    <h3 className="font-semibold text-secondary-900 mb-2">Important Information</h3>
+                    <ul className="text-sm text-secondary-800 space-y-1">
                       <li>• Please arrive 15 minutes before your booking time</li>
                       <li>• Bring appropriate sports equipment and footwear</li>
                       <li>• Cancellations must be made 24 hours in advance</li>
@@ -693,7 +740,7 @@ export default function App() {
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
                       onClick={resetForm}
-                      className="flex-1 bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors"
+                      className="flex-1 bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-700 transition-colors"
                     >
                       Book Another Pitch
                     </button>
@@ -723,7 +770,7 @@ export default function App() {
           user={user}
           onSignOut={handlePlayerSignOut}
         />
-        <div className="flex-1 bg-gradient-to-br from-green-50 to-blue-50">
+        <div className="flex-1 bg-gradient-to-br from-primary-50 to-secondary-50">
           <div className="container mx-auto px-4 py-8">
             <div className="max-w-4xl mx-auto">
               <button
@@ -742,9 +789,9 @@ export default function App() {
               )}
 
               <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-                <div className="bg-gradient-to-r from-green-500 to-blue-600 px-8 py-6">
+                <div className="bg-gradient-to-r from-primary-500 to-secondary-600 px-8 py-6">
                   <h1 className="text-2xl font-bold text-white">Book Your Pitch</h1>
-                  <p className="text-green-100 mt-1">{selectedPitch.name}</p>
+                  <p className="text-primary-100 mt-1">{selectedPitch.name}</p>
                 </div>
 
                 <form onSubmit={handleBookingSubmit} className="p-8">
@@ -761,7 +808,7 @@ export default function App() {
                             value={selectedDate}
                             onChange={(e) => setSelectedDate(e.target.value)}
                             min={getTomorrowDate()}
-                            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             required
                           />
                         </div>
@@ -780,9 +827,9 @@ export default function App() {
                               disabled={!slot.available}
                               className={`p-3 rounded-lg text-sm font-medium transition-all ${
                                 selectedTime === slot.time
-                                  ? 'bg-green-600 text-white shadow-lg'
+                                  ? 'bg-primary-600 text-white shadow-lg'
                                   : slot.available
-                                  ? 'bg-gray-100 text-gray-700 hover:bg-green-100 hover:text-green-700'
+                                  ? 'bg-gray-100 text-gray-700 hover:bg-primary-100 hover:text-primary-700'
                                   : 'bg-gray-50 text-gray-400 cursor-not-allowed'
                               }`}
                             >
@@ -799,7 +846,7 @@ export default function App() {
                         <select
                           value={duration}
                           onChange={(e) => setDuration(Number(e.target.value))}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         >
                           <option value={1}>1 hour</option>
                           <option value={2}>2 hours</option>
@@ -812,21 +859,21 @@ export default function App() {
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Customer Details</h3>
                         {user ? (
-                          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                            <p className="text-blue-800 text-sm mb-2">
+                          <div className="bg-secondary-50 border border-secondary-200 rounded-xl p-4">
+                            <p className="text-secondary-800 text-sm mb-2">
                               <strong>Signed in as:</strong> {user.email}
                             </p>
                             {playerProfile && (
-                              <p className="text-blue-800 text-sm mb-2">
+                              <p className="text-secondary-800 text-sm mb-2">
                                 <strong>Name:</strong> {playerProfile.full_name}
                               </p>
                             )}
                             {playerProfile?.phone && (
-                              <p className="text-blue-800 text-sm mb-2">
+                              <p className="text-secondary-800 text-sm mb-2">
                                 <strong>Phone:</strong> {playerProfile.phone}
                               </p>
                             )}
-                            <p className="text-blue-700 text-xs mt-3">
+                            <p className="text-secondary-700 text-xs mt-3">
                               Your booking will be automatically linked to your account
                             </p>
                           </div>
@@ -840,7 +887,7 @@ export default function App() {
                                 type="text"
                                 value={customerDetails.name}
                                 onChange={(e) => setCustomerDetails({...customerDetails, name: e.target.value})}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 required
                               />
                             </div>
@@ -852,7 +899,7 @@ export default function App() {
                                 type="email"
                                 value={customerDetails.email}
                                 onChange={(e) => setCustomerDetails({...customerDetails, email: e.target.value})}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 required
                               />
                             </div>
@@ -864,12 +911,49 @@ export default function App() {
                                 type="tel"
                                 value={customerDetails.phone}
                                 onChange={(e) => setCustomerDetails({...customerDetails, phone: e.target.value})}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                 required
                               />
                             </div>
                           </div>
                         )}
+                      </div>
+
+                      <div className="bg-white border border-gray-200 rounded-xl p-6">
+                        <h4 className="font-semibold text-gray-900 mb-4">Payment Method</h4>
+                        <div className="space-y-3">
+                          <label className="flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all hover:bg-gray-50"
+                                 style={{borderColor: paymentMethod === 'cash' ? '#10b981' : '#e5e7eb'}}>
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              value="cash"
+                              checked={paymentMethod === 'cash'}
+                              onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'online')}
+                              className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                            />
+                            <div className="ml-3">
+                              <div className="font-medium text-gray-900">Pay with Cash</div>
+                              <div className="text-sm text-gray-600">Pay at the venue when you arrive</div>
+                            </div>
+                          </label>
+
+                          <label className="flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all hover:bg-gray-50"
+                                 style={{borderColor: paymentMethod === 'online' ? '#10b981' : '#e5e7eb'}}>
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              value="online"
+                              checked={paymentMethod === 'online'}
+                              onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'online')}
+                              className="w-4 h-4 text-primary-600 focus:ring-2 focus:ring-primary-500"
+                            />
+                            <div className="ml-3">
+                              <div className="font-medium text-gray-900">Pay Online</div>
+                              <div className="text-sm text-gray-600">Pay securely with credit/debit card via Stripe</div>
+                            </div>
+                          </label>
+                        </div>
                       </div>
 
                       <div className="bg-gray-50 rounded-xl p-6">
@@ -894,7 +978,7 @@ export default function App() {
                           <div className="border-t border-gray-200 pt-2 mt-3">
                             <div className="flex justify-between">
                               <span className="font-semibold text-gray-900">Total:</span>
-                              <span className="font-bold text-green-600 text-lg">LKR {selectedPitch.price_per_hour * duration}</span>
+                              <span className="font-bold text-primary-600 text-lg">LKR {selectedPitch.price_per_hour * duration}</span>
                             </div>
                           </div>
                         </div>
@@ -913,15 +997,15 @@ export default function App() {
                     <button
                       type="submit"
                       disabled={!selectedDate || !selectedTime || loading}
-                      className="flex-1 bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                      className="flex-1 bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                     >
                       {loading ? (
                         <>
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                          Creating Booking...
+                          {paymentMethod === 'online' ? 'Redirecting to payment...' : 'Creating Booking...'}
                         </>
                       ) : (
-                        'Confirm Booking'
+                        paymentMethod === 'online' ? 'Proceed to Payment' : 'Confirm Booking'
                       )}
                     </button>
                   </div>
@@ -937,119 +1021,149 @@ export default function App() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      {user && (
+        <div className="bg-white border-b border-gray-200 px-4 py-2">
+          <div className="max-w-7xl mx-auto">
+            <SubscriptionStatus />
+          </div>
+        </div>
+      )}
       <Header
         currentPage={currentPage}
         onPageChange={handlePageChange}
         user={user}
         onSignOut={handlePlayerSignOut}
       />
-      <div className="flex-1 bg-gradient-to-br from-green-50 to-blue-50">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              {currentPage === 'venues' ? 'Our Football Venues' : 'Book Your Football Pitch'}
-            </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Choose from our premium football facilities and secure your perfect match time
-            </p>
-            {!user && (
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl max-w-md mx-auto">
-                <p className="text-blue-800 text-sm">
-                  <strong>Tip:</strong> <button
-                    onClick={() => setCurrentPage('login')}
-                    className="text-blue-600 hover:text-blue-700 underline"
-                  >
-                    Sign in
-                  </button> to track your bookings and enjoy faster checkout!
-                </p>
-              </div>
-            )}
-          </div>
-
-          {user && (
-            <div className="max-w-4xl mx-auto mb-8">
-              <UpcomingBookings userId={user.id} />
-            </div>
-          )}
-
-          {error && (
-            <div className="max-w-4xl mx-auto mb-8">
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center space-x-3">
-                <AlertCircle className="w-5 h-5 text-red-600" />
-                <p className="text-red-800">{error}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="max-w-7xl mx-auto">
-            <PitchFilters
-              allLocations={Array.from(new Set(pitches.map(p => p.location)))}
-              maxCapacityInData={Math.max(...pitches.map(p => p.capacity), 22)}
-              maxPriceInData={Math.max(...pitches.map(p => p.price_per_hour), 5000)}
-              onFiltersChange={setFilters}
-            />
-          </div>
-
-          {filteredPitches.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No pitches match your filters. Try adjusting your search criteria.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredPitches.map((pitch) => (
-              <div key={pitch.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col">
-                <div className="relative">
-                  <img
-                    src={pitch.image_url}
-                    alt={pitch.name}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="absolute top-4 right-4 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold border-4 border-white shadow-lg">
-                    LKR {pitch.price_per_hour}/hour
-                  </div>
-                </div>
-              
-                <div className="p-6 flex flex-col flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{pitch.name}</h3>
-                
-                  <div className="flex items-center text-gray-600 mb-2">
-                    <MapPin className="w-4 h-4 mr-2" />
-                    <span className="text-sm">{pitch.location}</span>
-                  </div>
-                
-                  <div className="flex items-center text-gray-600 mb-4">
-                    <Users className="w-4 h-4 mr-2" />
-                    <span className="text-sm">Up to {pitch.capacity} players</span>
-                  </div>
-                
-                  <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Amenities:</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {pitch.amenities.map((amenity, index) => (
-                        <span
-                          key={index}
-                          className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+            <div className="flex-1 bg-gradient-to-br from-green-50 to-blue-50">
+              <div className="container mx-auto px-4 py-8">
+                <div className="text-center mb-12">
+                  <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                    {currentPage === 'venues' ? 'Our Football Venues' : 'Book Your Football Pitch'}
+                  </h1>
+                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Choose from our premium football facilities and secure your perfect match time
+                  </p>
+                  {!user && (
+                    <div className="mt-4 p-4 bg-secondary-50 border border-secondary-200 rounded-xl max-w-md mx-auto">
+                      <p className="text-secondary-800 text-sm">
+                        <strong>Tip:</strong> <button
+                          onClick={() => setCurrentPage('login')}
+                          className="text-secondary-600 hover:text-secondary-700 underline"
                         >
-                          {amenity}
-                        </span>
-                      ))}
+                          Sign in
+                        </button> to track your bookings and enjoy faster checkout!
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {user && (
+                  <div className="max-w-4xl mx-auto mb-8">
+                    <UpcomingBookings userId={user.id} showPastBookings={false} />
+                  </div>
+                )}
+
+                {error && (
+                  <div className="max-w-4xl mx-auto mb-8">
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center space-x-3">
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                      <p className="text-red-800">{error}</p>
                     </div>
                   </div>
-                
-                  <button
-                    onClick={() => handlePitchSelect(pitch)}
-                    className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center justify-center space-x-2 mt-auto"
-                  >
-                    <Clock className="w-5 h-5" />
-                    <span>Book Now</span>
-                  </button>
+                )}
+
+                <div className="max-w-7xl mx-auto">
+                  <PitchFilters
+                    allLocations={Array.from(new Set(pitches.map(p => p.location)))}
+                    maxCapacityInData={Math.max(...pitches.map(p => p.capacity), 22)}
+                    maxPriceInData={Math.max(...pitches.map(p => p.price_per_hour), 5000)}
+                    onFiltersChange={setFilters}
+                  />
                 </div>
+
+                {filteredPitches.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500 text-lg">No pitches match your filters. Try adjusting your search criteria.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {filteredPitches.map((pitch) => {
+                      const rating = pitchRatings[pitch.id];
+                      return (
+                        <div key={pitch.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col">
+                          <div className="relative">
+                            <img
+                              src={pitch.image_url}
+                              alt={pitch.name}
+                              className="w-full h-48 object-cover"
+                            />
+                            <div className="absolute top-4 right-4 bg-primary-600 text-white px-3 py-1 rounded-full text-sm font-semibold border-4 border-white shadow-lg">
+                              LKR {pitch.price_per_hour}/hour
+                            </div>
+                          </div>
+
+                          <div className="p-6 flex flex-col flex-1">
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">{pitch.name}</h3>
+
+                            {rating && rating.count > 0 && (
+                              <div className="flex items-center space-x-1 mb-2">
+                                <div className="flex space-x-0.5">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star
+                                      key={star}
+                                      className={`w-4 h-4 ${
+                                        star <= Math.round(rating.average)
+                                          ? 'fill-yellow-400 text-yellow-400'
+                                          : 'text-gray-300'
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <span className="text-sm text-gray-600">
+                                  {rating.average.toFixed(1)} ({rating.count})
+                                </span>
+                              </div>
+                            )}
+                    
+                            <div className="flex items-center text-gray-600 mb-2">
+                              <MapPin className="w-4 h-4 mr-2" />
+                              <span className="text-sm">{pitch.location}</span>
+                            </div>
+                    
+                            <div className="flex items-center text-gray-600 mb-4">
+                              <Users className="w-4 h-4 mr-2" />
+                              <span className="text-sm">Up to {pitch.capacity} players</span>
+                            </div>
+                    
+                            <div className="mb-4">
+                              <h4 className="text-sm font-semibold text-gray-700 mb-2">Amenities:</h4>
+                              <div className="flex flex-wrap gap-1">
+                                {pitch.amenities.map((amenity, index) => (
+                                  <span
+                                    key={index}
+                                    className="bg-secondary-100 text-secondary-800 text-xs px-2 py-1 rounded-full"
+                                  >
+                                    {amenity}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                    
+                            <button
+                              onClick={() => handlePitchSelect(pitch)}
+                              className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white py-3 px-6 rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 flex items-center justify-center space-x-2 mt-auto"
+                            >
+                              <Clock className="w-5 h-5" />
+                              <span>Book Now</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            ))}
             </div>
-          )}
-        </div>
-      </div>
       <Footer onPageChange={handlePageChange} />
     </div>
   );

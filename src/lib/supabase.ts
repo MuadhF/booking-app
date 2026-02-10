@@ -66,6 +66,17 @@ export interface PlayerProfile {
   updated_at: string;
 }
 
+export interface Review {
+  id: string;
+  pitch_id: string;
+  player_id: string;
+  booking_id: string;
+  rating: number;
+  review_text?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // API functions
 export const pitchesApi = {
   async getAll(): Promise<Pitch[]> {
@@ -270,7 +281,7 @@ export const bookingsApi = {
     if (!supabase) {
       throw new Error('Supabase not configured');
     }
-    
+
     const { data, error } = await supabase
       .from('bookings')
       .select(`
@@ -290,8 +301,9 @@ export const bookingsApi = {
         )
       `)
       .eq('player_id', playerId)
-      .order('booking_date', { ascending: false });
-    
+      .order('booking_date', { ascending: true })
+      .order('start_time', { ascending: true });
+
     if (error) throw error;
     return data || [];
   },
@@ -300,8 +312,7 @@ export const bookingsApi = {
     if (!supabase) {
       throw new Error('Supabase not configured');
     }
-    
-    // Get bookings for this email from both player_profiles and guests
+
     const { data, error } = await supabase
       .from('bookings')
       .select(`
@@ -321,10 +332,90 @@ export const bookingsApi = {
         )
       `)
       .or(`player_profiles.email.eq.${email},guests.email.eq.${email}`)
-      .order('booking_date', { ascending: false });
-    
+      .order('booking_date', { ascending: true })
+      .order('start_time', { ascending: true });
+
     if (error) throw error;
     return data || [];
+  },
+
+  async cancelBooking(bookingId: string): Promise<void> {
+    if (!supabase) {
+      throw new Error('Supabase not configured');
+    }
+
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: 'cancelled' })
+      .eq('id', bookingId);
+
+    if (error) throw error;
+  },
+
+  async rescheduleBooking(
+    bookingId: string,
+    newDate: string,
+    newTime: string,
+    durationHours: number
+  ): Promise<Booking> {
+    if (!supabase) {
+      throw new Error('Supabase not configured');
+    }
+
+    // First, get the booking to check the pitch_id
+    const { data: booking, error: fetchError } = await supabase
+      .from('bookings')
+      .select('pitch_id, total_price')
+      .eq('id', bookingId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // Check if the new time slot is available
+    const existingBookings = await this.getByDateAndPitch(newDate, booking.pitch_id);
+
+    // Parse the new time
+    const [newHours, newMinutes] = newTime.split(':').map(Number);
+    const newStartMinutes = newHours * 60 + newMinutes;
+    const newEndMinutes = newStartMinutes + (durationHours * 60);
+
+    // Check for conflicts (excluding the current booking)
+    for (const existingBooking of existingBookings) {
+      if (existingBooking.id === bookingId) continue; // Skip the current booking
+
+      const [existingHours, existingMinutes] = existingBooking.start_time.split(':').map(Number);
+      const existingStartMinutes = existingHours * 60 + existingMinutes;
+      const existingEndMinutes = existingStartMinutes + (existingBooking.duration_hours * 60);
+
+      // Check for overlap
+      if (
+        (newStartMinutes >= existingStartMinutes && newStartMinutes < existingEndMinutes) ||
+        (newEndMinutes > existingStartMinutes && newEndMinutes <= existingEndMinutes) ||
+        (newStartMinutes <= existingStartMinutes && newEndMinutes >= existingEndMinutes)
+      ) {
+        throw new Error('This time slot is not available. Please choose a different time.');
+      }
+    }
+
+    // Update the booking
+    const { data, error } = await supabase
+      .from('bookings')
+      .update({
+        booking_date: newDate,
+        start_time: newTime
+      })
+      .eq('id', bookingId)
+      .select(`
+        *,
+        pitches!inner (
+          name,
+          location
+        )
+      `)
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 };
 
@@ -554,5 +645,131 @@ export const playerAuthApi = {
     });
 
     if (error) throw error;
+  }
+};
+
+export const reviewsApi = {
+  async create(reviewData: {
+    pitch_id: string;
+    player_id: string;
+    booking_id: string;
+    rating: number;
+    review_text?: string;
+  }): Promise<Review> {
+    if (!supabase) {
+      throw new Error('Supabase not configured');
+    }
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .insert([reviewData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async getByPitchId(pitchId: string): Promise<(Review & { player_profiles: PlayerProfile })[]> {
+    if (!supabase) {
+      throw new Error('Supabase not configured');
+    }
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .select(`
+        *,
+        player_profiles (
+          id,
+          full_name
+        )
+      `)
+      .eq('pitch_id', pitchId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByPlayerId(playerId: string): Promise<Review[]> {
+    if (!supabase) {
+      throw new Error('Supabase not configured');
+    }
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('player_id', playerId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getByBookingId(bookingId: string): Promise<Review | null> {
+    if (!supabase) {
+      throw new Error('Supabase not configured');
+    }
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('booking_id', bookingId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async update(reviewId: string, updates: { rating?: number; review_text?: string }): Promise<Review> {
+    if (!supabase) {
+      throw new Error('Supabase not configured');
+    }
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .update(updates)
+      .eq('id', reviewId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(reviewId: string): Promise<void> {
+    if (!supabase) {
+      throw new Error('Supabase not configured');
+    }
+
+    const { error } = await supabase
+      .from('reviews')
+      .delete()
+      .eq('id', reviewId);
+
+    if (error) throw error;
+  },
+
+  async getAverageRating(pitchId: string): Promise<{ average: number; count: number }> {
+    if (!supabase) {
+      throw new Error('Supabase not configured');
+    }
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('rating')
+      .eq('pitch_id', pitchId);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return { average: 0, count: 0 };
+    }
+
+    const sum = data.reduce((acc, review) => acc + review.rating, 0);
+    return {
+      average: sum / data.length,
+      count: data.length
+    };
   }
 };

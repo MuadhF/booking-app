@@ -1,11 +1,9 @@
 import React from 'react';
 import { Facebook, Twitter, Instagram, Mail, Phone, MapPin } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-interface FooterProps {
-  onPageChange: (page: string) => void;
-}
-
-export default function Footer({ onPageChange }: FooterProps) {
+export default function Footer() {
+  const navigate = useNavigate();
   return (
     <footer className="bg-gray-900 text-gray-300">
       <div className="container mx-auto px-4 py-12">
@@ -33,7 +31,10 @@ export default function Footer({ onPageChange }: FooterProps) {
             <ul className="space-y-2">
               <li>
                 <button
-                  onClick={() => onPageChange('home')}
+                  onClick={() => {
+                    navigate('/');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className="text-sm hover:text-white transition-colors"
                 >
                   Home
@@ -41,7 +42,10 @@ export default function Footer({ onPageChange }: FooterProps) {
               </li>
               <li>
                 <button
-                  onClick={() => onPageChange('venues')}
+                  onClick={() => {
+                    navigate('/venues');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className="text-sm hover:text-white transition-colors"
                 >
                   Our Venues
@@ -49,7 +53,10 @@ export default function Footer({ onPageChange }: FooterProps) {
               </li>
               <li>
                 <button
-                  onClick={() => onPageChange('contact')}
+                  onClick={() => {
+                    navigate('/contact');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className="text-sm hover:text-white transition-colors"
                 >
                   Contact Us
@@ -57,7 +64,10 @@ export default function Footer({ onPageChange }: FooterProps) {
               </li>
               <li>
                 <button
-                  onClick={() => onPageChange('venue-portal')}
+                  onClick={() => {
+                    navigate('/venue-login');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className="text-sm hover:text-white transition-colors"
                 >
                   Venue Portal
@@ -71,7 +81,10 @@ export default function Footer({ onPageChange }: FooterProps) {
             <ul className="space-y-2">
               <li>
                 <button
-                  onClick={() => onPageChange('terms')}
+                  onClick={() => {
+                    navigate('/terms');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className="text-sm hover:text-white transition-colors"
                 >
                   Terms & Conditions
@@ -79,7 +92,10 @@ export default function Footer({ onPageChange }: FooterProps) {
               </li>
               <li>
                 <button
-                  onClick={() => onPageChange('privacy')}
+                  onClick={() => {
+                    navigate('/privacy');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className="text-sm hover:text-white transition-colors"
                 >
                   Privacy Policy
@@ -87,7 +103,10 @@ export default function Footer({ onPageChange }: FooterProps) {
               </li>
               <li>
                 <button
-                  onClick={() => onPageChange('faqs')}
+                  onClick={() => {
+                    navigate('/faqs');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className="text-sm hover:text-white transition-colors"
                 >
                   FAQs
@@ -95,7 +114,10 @@ export default function Footer({ onPageChange }: FooterProps) {
               </li>
               <li>
                 <button
-                  onClick={() => onPageChange('cancellation')}
+                  onClick={() => {
+                    navigate('/cancellation-policy');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className="text-sm hover:text-white transition-colors"
                 >
                   Cancellation Policy

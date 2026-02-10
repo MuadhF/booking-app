@@ -127,7 +127,7 @@ export default function PitchFilters({
           onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
             isFiltersExpanded
-              ? 'bg-green-600 text-white'
+              ? 'bg-primary-600 text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
@@ -141,7 +141,7 @@ export default function PitchFilters({
             onClick={() => setIsSortExpanded(!isSortExpanded)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
               isSortExpanded
-                ? 'bg-green-600 text-white'
+                ? 'bg-primary-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
@@ -167,14 +167,14 @@ export default function PitchFilters({
                     }}
                     className={`w-full text-left px-4 py-2.5 transition-colors ${
                       filters.sortBy === option.value
-                        ? 'bg-green-50 text-green-700 font-medium'
+                        ? 'bg-primary-50 text-primary-700 font-medium'
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span>{option.label}</span>
                       {filters.sortBy === option.value && (
-                        <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                        <div className="w-2 h-2 bg-primary-600 rounded-full"></div>
                       )}
                     </div>
                   </button>
@@ -207,7 +207,7 @@ export default function PitchFilters({
                     type="checkbox"
                     checked={filters.locations.includes(location)}
                     onChange={() => handleLocationToggle(location)}
-                    className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+                    className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
                   />
                   <span className="ml-3 text-sm text-gray-600">{location}</span>
                 </label>
@@ -248,7 +248,7 @@ export default function PitchFilters({
               />
               <div className="relative w-full h-2 bg-gray-200 rounded-lg">
                 <div
-                  className="absolute h-2 bg-green-600 rounded-lg"
+                  className="absolute h-2 bg-primary-600 rounded-lg"
                   style={{
                     left: `${(filters.minCapacity / maxCapacityInData) * 100}%`,
                     right: `${100 - (filters.maxCapacity / maxCapacityInData) * 100}%`
@@ -312,7 +312,7 @@ export default function PitchFilters({
               />
               <div className="relative w-full h-2 bg-gray-200 rounded-lg">
                 <div
-                  className="absolute h-2 bg-green-600 rounded-lg"
+                  className="absolute h-2 bg-primary-600 rounded-lg"
                   style={{
                     left: `${(filters.minPrice / maxPriceInData) * 100}%`,
                     right: `${100 - (filters.maxPrice / maxPriceInData) * 100}%`
@@ -331,7 +331,7 @@ export default function PitchFilters({
                   type="checkbox"
                   checked={filters.hasToilets}
                   onChange={() => handleAmenityToggle('toilet')}
-                  className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+                  className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
                 />
                 <span className="ml-3 text-sm text-gray-600">Toilets</span>
               </label>
@@ -340,7 +340,7 @@ export default function PitchFilters({
                   type="checkbox"
                   checked={filters.hasChangingRooms}
                   onChange={() => handleAmenityToggle('changing')}
-                  className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+                  className="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
                 />
                 <span className="ml-3 text-sm text-gray-600">Changing Rooms</span>
               </label>

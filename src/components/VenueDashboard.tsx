@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Plus, Users, Phone, Mail, LogOut, Eye, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, Plus, Users, Phone, Mail, LogOut, Eye, CheckCircle, History } from 'lucide-react';
 import { bookingsApi, pitchesApi, type Booking, type Pitch } from '../lib/supabase';
+import Footer from './Footer';
 
 interface VenueDashboardProps {
   venueId: string;
   venueName: string;
   onLogout: () => void;
+  onPageChange: (page: string) => void;
 }
 
 interface NewBooking {
@@ -17,8 +19,8 @@ interface NewBooking {
   customerPhone: string;
 }
 
-export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'schedule' | 'new-booking'>('schedule');
+export default function VenueDashboard({ venueId, venueName, onLogout, onPageChange }: VenueDashboardProps) {
+  const [activeTab, setActiveTab] = useState<'schedule' | 'past-bookings' | 'new-booking'>('schedule');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [venue, setVenue] = useState<Pitch | null>(null);
   const [loading, setLoading] = useState(false);
@@ -177,31 +179,46 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
       }
       grouped[booking.booking_date].push(booking);
     });
-    
+
     // Sort dates
     const sortedDates = Object.keys(grouped).sort();
     const result: { [date: string]: Booking[] } = {};
     sortedDates.forEach(date => {
       result[date] = grouped[date].sort((a, b) => a.start_time.localeCompare(b.start_time));
     });
-    
+
     return result;
   };
 
-  const groupedBookings = groupBookingsByDate(bookings);
+  const isBookingPast = (booking: Booking) => {
+    const bookingDateTime = new Date(`${booking.booking_date}T${booking.start_time}`);
+    return bookingDateTime < new Date();
+  };
+
+  const upcomingBookings = bookings.filter(b => !isBookingPast(b));
+  const pastBookings = bookings.filter(b => isBookingPast(b));
+
+  const groupedUpcomingBookings = groupBookingsByDate(upcomingBookings);
+  const groupedPastBookings = groupBookingsByDate(pastBookings);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50">
       {/* Header */}
       <div className="bg-white shadow-lg border-b border-gray-200">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">{venueName}</h1>
-              <p className="text-sm text-gray-600">Venue Management Dashboard</p>
+            <div className="flex items-center space-x-3">
+              <img src="/logo.png" alt="RivoBook" className="h-10" />
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">{venueName}</h1>
+                <p className="text-sm text-gray-600">Venue Management Dashboard</p>
+              </div>
             </div>
             <button
-              onClick={onLogout}
+              onClick={() => {
+                onLogout();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
               <LogOut className="w-5 h-5" />
@@ -213,23 +230,34 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
 
       <div className="container mx-auto px-4 py-8">
         {/* Tab Navigation */}
-        <div className="flex space-x-1 mb-8 bg-white rounded-xl p-1 shadow-lg max-w-md">
+        <div className="flex space-x-1 mb-8 bg-white rounded-xl p-1 shadow-lg max-w-2xl">
           <button
             onClick={() => setActiveTab('schedule')}
             className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
               activeTab === 'schedule'
-                ? 'bg-green-600 text-white shadow-md'
+                ? 'bg-primary-600 text-white shadow-md'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             <Eye className="w-4 h-4" />
-            <span>Schedule</span>
+            <span>Upcoming</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('past-bookings')}
+            className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+              activeTab === 'past-bookings'
+                ? 'bg-primary-600 text-white shadow-md'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <History className="w-4 h-4" />
+            <span>Past</span>
           </button>
           <button
             onClick={() => setActiveTab('new-booking')}
             className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
               activeTab === 'new-booking'
-                ? 'bg-green-600 text-white shadow-md'
+                ? 'bg-primary-600 text-white shadow-md'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
@@ -245,69 +273,66 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
           </div>
         )}
 
-        {/* Schedule Tab */}
+        {/* Upcoming Schedule Tab */}
         {activeTab === 'schedule' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Booking Schedule</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Upcoming Bookings</h2>
               <div className="text-sm text-gray-600">
-                Total bookings: {bookings.length}
+                {upcomingBookings.length} booking{upcomingBookings.length !== 1 ? 's' : ''}
               </div>
             </div>
 
             {loading ? (
               <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading schedule...</p>
               </div>
-            ) : Object.keys(groupedBookings).length === 0 ? (
+            ) : upcomingBookings.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
                 <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No bookings yet</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No upcoming bookings</h3>
                 <p className="text-gray-600 mb-6">Create your first booking to get started</p>
                 <button
                   onClick={() => setActiveTab('new-booking')}
-                  className="bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors"
+                  className="bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-700 transition-colors"
                 >
                   Create Booking
                 </button>
               </div>
             ) : (
-              <div className="space-y-6">
-                {Object.entries(groupedBookings).map(([date, dateBookings]) => (
-                  <div key={date} className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                    <div className="bg-gradient-to-r from-green-600 to-blue-600 px-6 py-4">
-                      <h3 className="text-xl font-bold text-white">{formatDate(date)}</h3>
-                      <p className="text-green-100">{dateBookings.length} booking{dateBookings.length !== 1 ? 's' : ''}</p>
+              <div className="space-y-3">
+                {Object.entries(groupedUpcomingBookings).map(([date, dateBookings]) => (
+                  <div key={date} className="bg-white rounded-xl shadow overflow-hidden">
+                    <div className="bg-gradient-to-r from-primary-600 to-secondary-600 px-4 py-2">
+                      <h4 className="text-sm font-bold text-white">{formatDate(date)}</h4>
                     </div>
-                    <div className="p-6">
-                      <div className="space-y-4">
+                    <div className="p-3">
+                      <div className="space-y-2">
                         {dateBookings.map((booking) => (
-                          <div key={booking.id} className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                              <div className="bg-green-100 p-2 rounded-lg">
-                                <Clock className="w-5 h-5 text-green-600" />
+                          <div key={booking.id} className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="bg-primary-100 p-1.5 rounded">
+                                <Clock className="w-4 h-4 text-primary-600" />
                               </div>
                               <div>
-                                <div className="font-semibold text-gray-900">
+                                <div className="font-semibold text-sm text-gray-900">
                                   {booking.start_time} ({booking.duration_hours}h)
                                 </div>
-                                <div className="text-base font-bold text-gray-900 mt-1">
+                                <div className="text-sm font-medium text-gray-900">
                                   {(() => {
                                     const guestName = (booking as any).guests?.name;
                                     const playerName = (booking as any).player_profiles?.full_name;
-                                    console.log('Booking ID:', booking.id, 'Guest name:', guestName, 'Player name:', playerName);
                                     return guestName || playerName || `Customer (ID: ${booking.id.slice(-8)})`;
                                   })()}
                                 </div>
-                                <div className="flex items-center space-x-4 text-xs text-gray-600 mt-1">
+                                <div className="flex items-center space-x-3 text-xs text-gray-600 mt-0.5">
                                   <div className="flex items-center space-x-1">
                                     <Phone className="w-3 h-3" />
                                     <span>{(() => {
                                       const guestPhone = (booking as any).guests?.phone;
                                       const playerPhone = (booking as any).player_profiles?.phone;
-                                      console.log('Booking ID:', booking.id, 'Guest phone:', guestPhone, 'Player phone:', playerPhone);
-                                      return guestPhone || playerPhone || 'Phone not available';
+                                      return guestPhone || playerPhone || 'N/A';
                                     })()}</span>
                                   </div>
                                   <div className="flex items-center space-x-1">
@@ -315,31 +340,103 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
                                     <span>{(() => {
                                       const guestEmail = (booking as any).guests?.email;
                                       const playerEmail = (booking as any).player_profiles?.email;
-                                      console.log('Booking ID:', booking.id, 'Guest email:', guestEmail, 'Player email:', playerEmail);
-                                      return guestEmail || playerEmail || 'Email not available';
+                                      return guestEmail || playerEmail || 'N/A';
                                     })()}</span>
                                   </div>
-                                  {booking.player_id && (
-                                    <div className="text-xs text-purple-600">
-                                      Player ID: {booking.player_id.slice(-8)}
-                                    </div>
-                                  )}
-                                  {booking.guest_id && (
-                                    <div className="text-xs text-orange-600">
-                                      Guest ID: {booking.guest_id.slice(-8)}
-                                    </div>
-                                  )}
-                                  <div className="text-xs text-blue-600">
-                                    ID: {booking.id.slice(-8)}
-                                  </div>
-                                </div>
                                 </div>
                               </div>
+                            </div>
                             <div className="text-right">
-                              <div className="font-semibold text-green-600 text-lg">
+                              <div className="font-semibold text-primary-600">
                                 Rs. {booking.total_price.toLocaleString()}
                               </div>
-                              <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">
+                              <div className="text-xs px-2 py-0.5 rounded-full bg-primary-100 text-primary-800">
+                                {booking.status}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Past Bookings Tab */}
+        {activeTab === 'past-bookings' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Past Bookings</h2>
+              <div className="text-sm text-gray-600">
+                {pastBookings.length} booking{pastBookings.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading past bookings...</p>
+              </div>
+            ) : pastBookings.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+                <History className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No past bookings</h3>
+                <p className="text-gray-600">Past bookings will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {Object.entries(groupedPastBookings).map(([date, dateBookings]) => (
+                  <div key={date} className="bg-white rounded-xl shadow overflow-hidden">
+                    <div className="bg-gradient-to-r from-gray-500 to-gray-600 px-4 py-2">
+                      <h4 className="text-sm font-bold text-white">{formatDate(date)}</h4>
+                    </div>
+                    <div className="p-3">
+                      <div className="space-y-2">
+                        {dateBookings.map((booking) => (
+                          <div key={booking.id} className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="bg-gray-200 p-1.5 rounded">
+                                <Clock className="w-4 h-4 text-gray-600" />
+                              </div>
+                              <div>
+                                <div className="font-semibold text-sm text-gray-700">
+                                  {booking.start_time} ({booking.duration_hours}h)
+                                </div>
+                                <div className="text-sm font-medium text-gray-700">
+                                  {(() => {
+                                    const guestName = (booking as any).guests?.name;
+                                    const playerName = (booking as any).player_profiles?.full_name;
+                                    return guestName || playerName || `Customer (ID: ${booking.id.slice(-8)})`;
+                                  })()}
+                                </div>
+                                <div className="flex items-center space-x-3 text-xs text-gray-500 mt-0.5">
+                                  <div className="flex items-center space-x-1">
+                                    <Phone className="w-3 h-3" />
+                                    <span>{(() => {
+                                      const guestPhone = (booking as any).guests?.phone;
+                                      const playerPhone = (booking as any).player_profiles?.phone;
+                                      return guestPhone || playerPhone || 'N/A';
+                                    })()}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <Mail className="w-3 h-3" />
+                                    <span>{(() => {
+                                      const guestEmail = (booking as any).guests?.email;
+                                      const playerEmail = (booking as any).player_profiles?.email;
+                                      return guestEmail || playerEmail || 'N/A';
+                                    })()}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-semibold text-gray-600">
+                                Rs. {booking.total_price.toLocaleString()}
+                              </div>
+                              <div className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
                                 {booking.status}
                               </div>
                             </div>
@@ -358,9 +455,9 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
         {activeTab === 'new-booking' && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-              <div className="bg-gradient-to-r from-green-600 to-blue-600 px-8 py-6">
+              <div className="bg-gradient-to-r from-primary-600 to-secondary-600 px-8 py-6">
                 <h2 className="text-2xl font-bold text-white">Create New Booking</h2>
-                <p className="text-green-100 mt-1">Add a booking for {venueName}</p>
+                <p className="text-primary-100 mt-1">Add a booking for {venueName}</p>
               </div>
 
               <form onSubmit={handleCreateBooking} className="p-8">
@@ -378,7 +475,7 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
                         min={getTomorrowDate()}
                         max={getMaxBookingDate()}
                         className={`w-full pl-12 pr-4 py-3 border rounded-xl focus:ring-2 focus:border-transparent transition-colors ${
-                          dateError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
+                          dateError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
                         }`}
                         required
                       />
@@ -396,7 +493,7 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
                         type="time"
                         value={newBooking.time}
                         onChange={(e) => setNewBooking({...newBooking, time: e.target.value})}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         required
                       />
                     </div>
@@ -409,7 +506,7 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
                     <select
                       value={newBooking.duration}
                       onChange={(e) => setNewBooking({...newBooking, duration: Number(e.target.value)})}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <option value={1}>1 hour</option>
                       <option value={2}>2 hours</option>
@@ -427,7 +524,7 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
                         type="text"
                         value={newBooking.customerName}
                         onChange={(e) => setNewBooking({...newBooking, customerName: e.target.value})}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         placeholder="Enter customer name"
                         required
                       />
@@ -444,7 +541,7 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
                         type="email"
                         value={newBooking.customerEmail}
                         onChange={(e) => setNewBooking({...newBooking, customerEmail: e.target.value})}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         placeholder="customer@example.com"
                         required
                       />
@@ -461,7 +558,7 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
                         type="tel"
                         value={newBooking.customerPhone}
                         onChange={(e) => setNewBooking({...newBooking, customerPhone: e.target.value})}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         placeholder="+94 77 123 4567"
                         required
                       />
@@ -488,7 +585,7 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
                       <div className="border-t border-gray-200 pt-2 mt-3">
                         <div className="flex justify-between">
                           <span className="font-semibold text-gray-900">Total:</span>
-                          <span className="font-bold text-green-600 text-lg">
+                          <span className="font-bold text-primary-600 text-lg">
                             Rs. {(venue.price_per_hour * newBooking.duration).toLocaleString()}
                           </span>
                         </div>
@@ -508,7 +605,7 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                    className="flex-1 bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                   >
                     {loading ? (
                       <>
@@ -528,6 +625,8 @@ export default function VenueDashboard({ venueId, venueName, onLogout }: VenueDa
           </div>
         )}
       </div>
+
+      <Footer onPageChange={onPageChange} />
     </div>
   );
 }

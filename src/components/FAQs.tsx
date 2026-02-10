@@ -17,7 +17,7 @@ function FAQItem({ question, answer, isOpen, onToggle }: FAQItemProps) {
       >
         <span className="text-left font-semibold text-gray-900">{question}</span>
         {isOpen ? (
-          <ChevronUp className="w-5 h-5 text-green-600 flex-shrink-0 ml-4" />
+          <ChevronUp className="w-5 h-5 text-primary-600 flex-shrink-0 ml-4" />
         ) : (
           <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0 ml-4" />
         )}
@@ -94,18 +94,18 @@ export default function FAQs() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 py-12">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="bg-gradient-to-r from-green-500 to-green-600 px-8 py-10">
+            <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-8 py-10">
               <div className="flex items-center space-x-3 mb-4">
                 <HelpCircle className="w-10 h-10 text-white" />
                 <h1 className="text-3xl md:text-4xl font-bold text-white">
                   Frequently Asked Questions
                 </h1>
               </div>
-              <p className="text-green-100">
+              <p className="text-primary-100">
                 Find answers to common questions about booking football pitches with Active SL
               </p>
             </div>
@@ -127,11 +127,11 @@ export default function FAQs() {
               <p className="text-gray-700 text-sm">
                 Can't find what you're looking for? Our support team is here to help.
                 Contact us at{' '}
-                <a href="mailto:support@pitchpro.lk" className="text-green-600 hover:text-green-700">
+                <a href="mailto:support@pitchpro.lk" className="text-primary-600 hover:text-primary-700">
                   support@rivobook.com
                 </a>{' '}
                 or call us at{' '}
-                <a href="tel:+94112345678" className="text-green-600 hover:text-green-700">
+                <a href="tel:+94112345678" className="text-primary-600 hover:text-primary-700">
                   +94 11 234 5678
                 </a>
               </p>

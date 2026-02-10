@@ -3,11 +3,11 @@ import { FileText } from 'lucide-react';
 
 export default function TermsAndConditions() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 py-12">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-8 md:p-12">
           <div className="flex items-center space-x-3 mb-8">
-            <FileText className="w-8 h-8 text-green-600" />
+            <FileText className="w-8 h-8 text-primary-600" />
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Terms & Conditions</h1>
           </div>
 

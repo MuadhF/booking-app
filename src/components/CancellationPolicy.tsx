@@ -3,11 +3,11 @@ import { XCircle } from 'lucide-react';
 
 export default function CancellationPolicy() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 py-12">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-8 md:p-12">
           <div className="flex items-center space-x-3 mb-8">
-            <XCircle className="w-8 h-8 text-green-600" />
+            <XCircle className="w-8 h-8 text-primary-600" />
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Cancellation Policy</h1>
           </div>
 
@@ -26,11 +26,11 @@ export default function CancellationPolicy() {
             <section>
               <h2 className="text-2xl font-semibold text-gray-900 mb-3">Cancellation Time Frames</h2>
 
-              <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-4">
-                <h3 className="font-semibold text-green-900 mb-2">
+              <div className="bg-primary-50 border border-primary-200 rounded-xl p-6 mb-4">
+                <h3 className="font-semibold text-primary-900 mb-2">
                   More than 24 Hours Before Booking
                 </h3>
-                <p className="text-green-800 text-sm">
+                <p className="text-primary-800 text-sm">
                   Full refund to your original payment method. No cancellation fee applies. Refunds are
                   typically processed within 5-7 business days.
                 </p>

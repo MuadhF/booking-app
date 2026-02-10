@@ -1,22 +1,23 @@
 import React, { useState } from 'react';
 import { Home, MapPin, Phone, Building2, User, LogOut, Menu, X } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { playerAuthApi } from '../lib/supabase';
-import logo from "/images/logo.png"
 
 interface HeaderProps {
-  currentPage: string;
-  onPageChange: (page: string) => void;
   user?: any;
   onSignOut?: () => void;
 }
 
-export default function Header({ currentPage, onPageChange, user, onSignOut }: HeaderProps) {
+export default function Header({ user, onSignOut }: HeaderProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const navItems = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'venues', label: 'Locations', icon: MapPin },
-    { id: 'contact', label: 'Contact', icon: Phone },
-    ...(user ? [] : [{ id: 'venue-portal', label: 'Venue Portal', icon: Building2 }])
+    { id: 'home', label: 'Home', icon: Home, path: '/' },
+    { id: 'venues', label: 'Locations', icon: MapPin, path: '/venues' },
+    { id: 'contact', label: 'Contact', icon: Phone, path: '/contact' },
+    ...(user ? [] : [{ id: 'venue-portal', label: 'Venue Portal', icon: Building2, path: '/venue-login' }])
   ];
 
   const handleSignOut = async () => {
@@ -24,13 +25,14 @@ export default function Header({ currentPage, onPageChange, user, onSignOut }: H
       await playerAuthApi.signOut();
       if (onSignOut) onSignOut();
       setMobileMenuOpen(false);
+      navigate('/');
     } catch (error) {
       console.error('Sign out error:', error);
     }
   };
 
-  const handleNavClick = (page: string) => {
-    onPageChange(page);
+  const handleNavClick = (path: string) => {
+    navigate(path);
     setMobileMenuOpen(false);
   };
 
@@ -40,23 +42,27 @@ export default function Header({ currentPage, onPageChange, user, onSignOut }: H
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <button
-            onClick={() => onPageChange('home')}
+            onClick={() => {
+              navigate('/');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             className="absolute left-1/2 transform -translate-x-1/2 md:static md:transform-none flex items-center hover:opacity-80 transition-opacity flex-shrink-0 bg-transparent"
           >
-            <img src={logo} alt="RivoBook Logo" className="h-12 w-auto" />
+            <img src="/logo.png" alt="RivoBook Logo" className="h-12 w-auto" />
           </button>
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-1 ml-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
+              const isActive = location.pathname === item.path;
               return (
                 <button
                   key={item.id}
-                  onClick={() => onPageChange(item.id)}
+                  onClick={() => handleNavClick(item.path)}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    currentPage === item.id
-                      ? 'bg-green-100 text-green-700 shadow-sm'
+                    isActive
+                      ? 'bg-primary-100 text-primary-700 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
@@ -65,15 +71,15 @@ export default function Header({ currentPage, onPageChange, user, onSignOut }: H
                 </button>
               );
             })}
-            
+
             {/* User Menu */}
             {user ? (
               <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-200">
                 <button
-                  onClick={() => onPageChange('profile')}
+                  onClick={() => handleNavClick('/profile')}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    currentPage === 'profile'
-                      ? 'bg-blue-100 text-blue-700 shadow-sm'
+                    location.pathname === '/profile'
+                      ? 'bg-secondary-100 text-secondary-700 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
@@ -91,9 +97,9 @@ export default function Header({ currentPage, onPageChange, user, onSignOut }: H
             ) : (
               <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-200">
                 <button
-                  onClick={() => onPageChange('login')}
+                  onClick={() => handleNavClick('/login')}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    currentPage === 'login'
+                    location.pathname === '/login'
                       ? 'bg-blue-100 text-blue-700 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
@@ -122,13 +128,14 @@ export default function Header({ currentPage, onPageChange, user, onSignOut }: H
             <nav className="space-y-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
+                const isActive = location.pathname === item.path;
                 return (
                   <button
                     key={item.id}
-                    onClick={() => handleNavClick(item.id)}
+                    onClick={() => handleNavClick(item.path)}
                     className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                      currentPage === item.id
-                        ? 'bg-green-100 text-green-700'
+                      isActive
+                        ? 'bg-primary-100 text-primary-700'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                   >
@@ -143,10 +150,10 @@ export default function Header({ currentPage, onPageChange, user, onSignOut }: H
                 {user ? (
                   <>
                     <button
-                      onClick={() => handleNavClick('profile')}
+                      onClick={() => handleNavClick('/profile')}
                       className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                        currentPage === 'profile'
-                          ? 'bg-blue-100 text-blue-700'
+                        location.pathname === '/profile'
+                          ? 'bg-secondary-100 text-secondary-700'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                       }`}
                     >
@@ -163,9 +170,9 @@ export default function Header({ currentPage, onPageChange, user, onSignOut }: H
                   </>
                 ) : (
                   <button
-                    onClick={() => handleNavClick('login')}
+                    onClick={() => handleNavClick('/login')}
                     className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                      currentPage === 'login'
+                      location.pathname === '/login'
                         ? 'bg-blue-100 text-blue-700'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }`}
